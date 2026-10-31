@@ -21,6 +21,7 @@ The KiCad project files are named `USB-Adapter`.
 | Output | 5.16 V measured, USB-A receptacle (J2, TE 292303-1). Converter limit 3 A. |
 | UVLO | Off at 12.1 to 12.3 V, on again at 13.3 to 13.4 V (measured, see tuning log) |
 | Switching frequency | 1.2 MHz (RT pin tied to GND through R3) |
+| Efficiency | About 95 % theoretical for 12 V in, 5 V out, based on the TPS62933 datasheet efficiency curves. Not yet measured on this board. |
 | Inductor | Würth 74439387068, WE-XHMI 7070, 6.8 µH |
 | Soft start | C4 on the SS pin |
 | Board | 40 × 18 mm, 2 layers |
