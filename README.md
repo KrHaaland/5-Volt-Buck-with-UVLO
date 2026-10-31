@@ -86,9 +86,9 @@ Notes from bring-up of the first two boards, all with 5 % resistors.
 | Try | R6 / R7 | Calculated | Measured | Note |
 |---|---|---|---|---|
 | 1 | 43 kΩ / 8.2 kΩ | 5.00 V | 4.88 V | Too low. |
-| 2 | 56 kΩ / 10 kΩ | 5.28 V | 5.23 V | 0.15 V over is better than 0.12 V under, since there is some drop along the cable. Still inside USB spec, but a bit much, should be lowered. |
+| 2 | 56 kΩ / 10 kΩ | 5.28 V | 5.23 V | A bit much, should be lowered. |
 | 3 | 82 kΩ / 15 kΩ | 5.17 V | 5.17 V | Fine. |
-| 4 | 130 kΩ / 24 kΩ | 5.13 V | 5.16 V | |
+| 4 | 130 kΩ / 24 kΩ | 5.13 V | 5.16 V | Better. |
 | 5 | 300 kΩ / 56 kΩ | 5.09 V | 5.22 V | |
 | 6 | 130 kΩ / 24 kΩ | 5.13 V | 5.16 V | Went back to this. Good enough. |
 
