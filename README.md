@@ -67,6 +67,10 @@ the EN threshold spread in the datasheet (rising threshold up to 1.28 V max) com
 with 5 % resistors. The hysteresis is about 1.1 V; the datasheet recommends more than
 0.5 V.
 
+**Disabling the UVLO:** leave out (or remove) R1 and R2. The EN pin then floats and the
+converter's internal pull-up current enables it, so it simply runs over the chip's full
+3.8 V to 30 V input range.
+
 ## Tuning log
 
 Notes from bring-up of the first two boards, all with 5 % resistors.
@@ -98,6 +102,7 @@ specific batch.
 ## Repository contents
 
 - `USB-Adapter.kicad_pro`, `.kicad_sch`, `.kicad_pcb`: KiCad project, schematic and board.
+- `schematic.pdf`: plotted schematic.
 - `production/`: JLCPCB export from the Fabrication Toolkit plugin (gerber zip, BOM,
   component positions, IPC netlist). This export is from an earlier revision: besides the
   resistor values above, it lists C4 as 33 nF while the schematic has 100 nF.
