@@ -9,6 +9,8 @@ charged again (roughly 13.3 V), so the adapter cannot flatten the battery.
 
 The KiCad project files are named `USB-Adapter`.
 
+![3D render of the board: USB-A receptacle on the left, Würth inductor in the middle, Wago input terminal on the right](images/board-3d.png)
+
 ## Specifications (as built)
 
 | | |
@@ -103,6 +105,7 @@ specific batch.
 
 - `USB-Adapter.kicad_pro`, `.kicad_sch`, `.kicad_pcb`: KiCad project, schematic and board.
 - `schematic.pdf`: plotted schematic.
+- `images/`: 3D render of the board.
 - `production/`: JLCPCB export from the Fabrication Toolkit plugin (gerber zip, BOM,
   component positions, IPC netlist). This export is from an earlier revision: besides the
   resistor values above, it lists C4 as 33 nF while the schematic has 100 nF.
