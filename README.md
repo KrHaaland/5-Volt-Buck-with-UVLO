@@ -9,9 +9,9 @@ charged again (roughly 13.3 V), so the adapter cannot flatten the battery.
 
 The KiCad project files are named `USB-Adapter`.
 
-![Assembled board in the palm of a hand](images/board-photo.jpg)
-
 ![3D render of the board: USB-A receptacle on the left, Würth inductor in the middle, Wago input terminal on the right](images/board-3d.png)
+
+![Assembled board in the palm of a hand](images/board-photo.jpg)
 
 ## Specifications (as built)
 
