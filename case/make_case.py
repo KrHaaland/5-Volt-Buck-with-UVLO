@@ -16,7 +16,7 @@ L3D=os.environ.get("KICAD_3D_MODELS", "")
 # ---------------- parameters (board frame: X 0..40 along length, Y 0..18 across, Z=0 = board top) ----------
 BW, BL, BT, BR = 40.0, 18.0, 1.6, 2.5
 CLR   = 0.4      # board edge to inner wall
-EXT   = 10.0     # extra cavity length at the wire end for a zip tie on the cable
+EXT   = 10.0     # extra cavity length at the wire end: room for a zip tie on the cable as a pull stop
 WALL  = 2.0
 FLOOR = 2.6
 STAND = 1.0      # floor top to board bottom (through-hole pins are trimmed flush)
@@ -29,7 +29,6 @@ CB_D, CB_DEPTH = 5.2, 1.8                        # counterbore for pan-head in f
 BOSS_D, BOSS_HOLE, BOSS_DEPTH = 4.6, 2.0, 7.0    # lid bosses, M2.5 self-tap pilot
 USB_Y, USB_Z, USB_CLR = (2.43,15.57), (1.30,7.05), 0.5
 CABLE_D, CABLE_Z, CABLE_CSK = 7.0, 1.5, 9.0     # round cable entry: hole, centre height above board top, outside countersink
-ZT_X, ZT_SPAN, ZT_SLOT_L, ZT_SLOT_W, ZT_CH_D = -CLR-EXT/2, 9.0, 5.2, 2.0, 1.4   # zip-tie floor slots and recess under the floor
 BTN_SLOTS = [(7.3,12.5,5.3,8.7),(7.3,12.5,9.3,12.7)]
 VENT_X=[16.0,18.5,21.0,23.5]; VENT_W=1.2; VENT_Y=(3.5,14.5)
 
@@ -63,10 +62,8 @@ base = base.cut(box(BW-1.0, ox1+2, uy0, uy1, uz0, Z_WALL_TOP+1))
 # cable entry: one round hole in the end wall, countersunk on the outside
 base = base.cut(cyl(CABLE_D, WALL+2, V(ox0-1, BL/2, CABLE_Z), V(1,0,0)))
 base = base.cut(Part.makeCone(CABLE_CSK/2, CABLE_D/2, (CABLE_CSK-CABLE_D)/2, V(ox0-0.001, BL/2, CABLE_Z), V(1,0,0)))
-# zip-tie anchor: two slots through the floor joined by a recess underneath, so the tie sits flush
-for sy in (BL/2-ZT_SPAN/2, BL/2+ZT_SPAN/2):
-    base = base.cut(box(ZT_X-ZT_SLOT_L/2, ZT_X+ZT_SLOT_L/2, sy-ZT_SLOT_W/2, sy+ZT_SLOT_W/2, Z_FLOOR_BOT-1, Z_FLOOR_TOP+1))
-base = base.cut(box(ZT_X-ZT_SLOT_L/2, ZT_X+ZT_SLOT_L/2, BL/2-ZT_SPAN/2-ZT_SLOT_W/2, BL/2+ZT_SPAN/2+ZT_SLOT_W/2, Z_FLOOR_BOT-1, Z_FLOOR_BOT+ZT_CH_D))
+# the 10 mm extension is free space: a zip tie cinched on the cable here is bigger than the
+# entry hole, so a yank on the cable stops at the tie instead of at the Wago connection
 # board end stops either side of the Wago, so the board cannot slide into the extension
 for (y0,y1) in ((iy0, 3.6), (BL-3.6, iy1)):
     base = base.fuse(box(-CLR-1.0, -CLR, y0, y1, Z_FLOOR_TOP, 0.0))
