@@ -77,10 +77,7 @@ base = base.cut(cyl(CABLE_D, WALL+2, V(ox0-1, BL/2, CABLE_Z), V(1,0,0)))
 # board end stops either side of the Wago, so the board cannot slide into the extension
 for (y0,y1) in ((iy0, 3.6), (BL-3.6, iy1)):
     base = base.fuse(box(BOARD_DX-CLR-1.0, BOARD_DX-CLR, y0, y1, Z_FLOOR_TOP, 0.0))
-try:
-    bot=[e for e in base.Edges if abs(e.BoundBox.ZMin-Z_FLOOR_BOT)<1e-6 and abs(e.BoundBox.ZMax-Z_FLOOR_BOT)<1e-6 and e.Length>3]
-    base = base.makeChamfer(0.6, bot)
-except Exception as ex: print("base chamfer skipped:", ex)
+# no chamfer on the bed side: the floor's underside is left sharp-edged
 
 # ---------------- lid ----------------
 lid = rrect(ox0,oy0,ox1,oy1,OR_, Z_WALL_TOP, LID_T)
@@ -102,10 +99,7 @@ for (hx,hy) in HOLES:
         lid = lid.cut(box(hx-BOSS_D, hx+BOSS_D, WAGO_Y[0]-BOSS_FLAT_CLR, WAGO_Y[0]+1, -1, WAGO_TOP+USB_CLR))
     if hy > WAGO_Y[1] and hy-BOSS_D/2 < WAGO_Y[1]+BOSS_FLAT_CLR:
         lid = lid.cut(box(hx-BOSS_D, hx+BOSS_D, WAGO_Y[1]-1, WAGO_Y[1]+BOSS_FLAT_CLR, -1, WAGO_TOP+USB_CLR))
-try:
-    top=[e for e in lid.Edges if abs(e.BoundBox.ZMin-Z_LID_TOP)<1e-6 and abs(e.BoundBox.ZMax-Z_LID_TOP)<1e-6 and e.Length>3 and (abs(e.BoundBox.XMin-ox0)<1e-6 or abs(e.BoundBox.XMax-ox1)<1e-6 or abs(e.BoundBox.YMin-oy0)<1e-6 or abs(e.BoundBox.YMax-oy1)<1e-6)]
-    lid = lid.makeChamfer(0.6, top)
-except Exception as ex: print("lid chamfer skipped:", ex)
+# no chamfer on the lid top either: it is the bed side when the lid is printed upside down
 
 base = base.removeSplitter(); lid = lid.removeSplitter()
 
