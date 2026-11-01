@@ -1,0 +1,12 @@
+{
+ "outer_mm": [
+  44.8,
+  22.8,
+  18.2
+ ],
+ "wall": 2.0,
+ "floor": 2.6,
+ "lid": 2.0,
+ "usb_protrusion_mm": 2.5,
+ "screws": "3x M2.5 x 12 self-tapping, from below"
+}

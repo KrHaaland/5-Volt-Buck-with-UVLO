@@ -104,11 +104,39 @@ Notes from bring-up of the first two boards, all with 5 % resistors.
 The plan is to get 1 % resistors. The 5 % ones require tweaking and testing with the
 specific batch.
 
+## 3D-printed case
+
+![Exploded view of the printed case: base, PCB with connectors, lid](case/case-exploded.png)
+
+A two-part enclosure generated from the PCB geometry, in `case/`:
+
+- `usb-adapter-case.step`: base and lid in print orientation (lid upside down). Also as
+  `usb-adapter-case-base.stl` and `usb-adapter-case-lid.stl` for slicing.
+- `usb-adapter-case-assembled.step`: base, lid and PCB outline in their assembled positions.
+- `make_case.py`: the parametric FreeCAD script that produced the files. Edit the parameter
+  block at the top and re-run with `freecadcmd` to change clearances, wall thickness and so on.
+
+| | |
+|---|---|
+| Outer size | 44.8 × 22.8 × 18.2 mm, 2 mm walls, 2.6 mm floor, 2 mm lid |
+| Board clearance | 0.4 mm to the walls, 3 mm standoff under the board, 9 mm above the board |
+| USB end | U-shaped slot in the end wall; the lid carries a tab that closes the slot above the shell. The receptacle protrudes 2.5 mm so a plug seats fully. |
+| Wire end | Two 4.2 mm holes with outside countersinks, lined up with the Wago wire entries. Two slots in the lid give screwdriver access to the Wago release buttons. |
+| Cooling | Vent slots in the lid, in the floor and in both long walls above the inductor and converter. |
+| Fastening | Three M2.5 × 12 self-tapping screws from below. They pass through the floor and the 3 mm board holes into bosses on the lid, clamping the board. Screw heads sit in counterbores in the floor. |
+
+Assembly: drop the board into the base so the USB shell slides down into the end slot, fit
+the lid, then drive the three screws from underneath. Wires are pushed in through the end
+wall after assembly. The case was checked for interference against the connector STEP models
+and a 7070 inductor envelope with zero overlap, but it has not been printed yet, so treat the
+first print as a fit check.
+
 ## Repository contents
 
 - `USB-Adapter.kicad_pro`, `.kicad_sch`, `.kicad_pcb`: KiCad project, schematic and board.
 - `schematic.pdf`: plotted schematic.
 - `images/`: photo of the assembled board and a 3D render.
+- `case/`: 3D-printable enclosure (STEP, STL, previews) and the FreeCAD script that generates it.
 - `production/`: JLCPCB export from the Fabrication Toolkit plugin (gerber zip, BOM,
   component positions, IPC netlist). This export is from an earlier revision: besides the
   resistor values above, it lists C4 as 33 nF while the schematic has 100 nF, and it lists R3
