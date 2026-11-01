@@ -118,18 +118,19 @@ A two-part enclosure generated from the PCB geometry, in `case/`:
 
 | | |
 |---|---|
-| Outer size | 44.8 × 22.8 × 18.2 mm, 2 mm walls, 2.6 mm floor, 2 mm lid |
-| Board clearance | 0.4 mm to the walls, 3 mm standoff under the board, 9 mm above the board |
+| Outer size | 54.8 × 22.8 × 16.2 mm, 2 mm walls, 2.6 mm floor, 2 mm lid |
+| Board clearance | 0.4 mm to the walls, 1 mm standoff under the board (the through-hole pins are trimmed flush), 9 mm above the board |
 | USB end | U-shaped slot in the end wall; the lid carries a tab that closes the slot above the shell. The receptacle protrudes 2.5 mm so a plug seats fully. |
-| Wire end | Two 4.2 mm holes with outside countersinks, lined up with the Wago wire entries. Two slots in the lid give screwdriver access to the Wago release buttons. |
+| Wire end | The cavity extends 10 mm beyond the board. A single 7 mm countersunk hole in the end wall takes a two-core cable. Inside, a zip tie around the cable passes through two slots in the floor, with a recess underneath so the tie sits flush. The cinched tie cannot pass through the hole, so the cable cannot be yanked out. Two low ribs stop the board sliding into the extension. Two slots in the lid give screwdriver access to the Wago release buttons. |
 | Cooling | Vent slots in the lid, in the floor and in both long walls above the inductor and converter. |
-| Fastening | Three M2.5 × 12 self-tapping screws from below. They pass through the floor and the 3 mm board holes into bosses on the lid, clamping the board. Screw heads sit in counterbores in the floor. |
+| Fastening | Three M2.5 × 10 self-tapping screws from below. They pass through the floor and the 3 mm board holes into bosses on the lid, clamping the board. Screw heads sit in counterbores in the floor. |
 
-Assembly: drop the board into the base so the USB shell slides down into the end slot, fit
-the lid, then drive the three screws from underneath. Wires are pushed in through the end
-wall after assembly. The case was checked for interference against the connector STEP models
-and a 7070 inductor envelope with zero overlap, but it has not been printed yet, so treat the
-first print as a fit check.
+Assembly: feed the cable through the end wall, strip the two conductors and push them into
+the Wago, then cinch a zip tie around the cable through the two floor slots. Drop the board
+into the base so the USB shell slides down into the end slot, fit the lid, and drive the three
+screws from underneath. The case was checked for interference against the connector STEP models
+(USB pins modelled as trimmed to 0.8 mm) and a 7070 inductor envelope with zero overlap, but
+it has not been printed yet, so treat the first print as a fit check.
 
 ## Repository contents
 

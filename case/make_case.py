@@ -16,9 +16,10 @@ L3D=os.environ.get("KICAD_3D_MODELS", "")
 # ---------------- parameters (board frame: X 0..40 along length, Y 0..18 across, Z=0 = board top) ----------
 BW, BL, BT, BR = 40.0, 18.0, 1.6, 2.5
 CLR   = 0.4      # board edge to inner wall
+EXT   = 10.0     # extra cavity length at the wire end for a zip tie on the cable
 WALL  = 2.0
 FLOOR = 2.6
-STAND = 3.0      # floor top to board bottom (USB pins reach 2.0 below board)
+STAND = 1.0      # floor top to board bottom (through-hole pins are trimmed flush)
 ABOVE = 9.0      # board top to lid underside (USB top 7.9, inductor 7.1)
 LID_T = 2.0
 LIP_H, LIP_T, LIP_CLR = 2.5, 1.2, 0.2
@@ -27,12 +28,13 @@ PILLAR_D, PILLAR_HOLE = 5.5, 2.7                # base pillars, M2.5 clearance
 CB_D, CB_DEPTH = 5.2, 1.8                        # counterbore for pan-head in floor
 BOSS_D, BOSS_HOLE, BOSS_DEPTH = 4.6, 2.0, 7.0    # lid bosses, M2.5 self-tap pilot
 USB_Y, USB_Z, USB_CLR = (2.43,15.57), (1.30,7.05), 0.5
-WIRE = [(7.0,2.5),(11.0,2.5)]; WIRE_D=4.2; WIRE_CSK=6.0
+CABLE_D, CABLE_Z, CABLE_CSK = 7.0, 1.5, 9.0     # round cable entry: hole, centre height above board top, outside countersink
+ZT_X, ZT_SPAN, ZT_SLOT_L, ZT_SLOT_W, ZT_CH_D = -CLR-EXT/2, 9.0, 5.2, 2.0, 1.4   # zip-tie floor slots and recess under the floor
 BTN_SLOTS = [(7.3,12.5,5.3,8.7),(7.3,12.5,9.3,12.7)]
 VENT_X=[16.0,18.5,21.0,23.5]; VENT_W=1.2; VENT_Y=(3.5,14.5)
 
 # derived
-ix0, iy0, ix1, iy1 = -CLR, -CLR, BW+CLR, BL+CLR          # cavity
+ix0, iy0, ix1, iy1 = -CLR-EXT, -CLR, BW+CLR, BL+CLR      # cavity incl. wire-end extension
 ox0, oy0, ox1, oy1 = ix0-WALL, iy0-WALL, ix1+WALL, iy1+WALL
 IR, OR_ = BR+CLR, BR+CLR+WALL
 Z_FLOOR_BOT = -BT-STAND-FLOOR     # -7.2
@@ -58,10 +60,16 @@ for (hx,hy) in HOLES:
 # USB: U-slot in the end wall, open to the top
 uy0=USB_Y[0]-USB_CLR; uy1=USB_Y[1]+USB_CLR; uz0=USB_Z[0]-USB_CLR
 base = base.cut(box(BW-1.0, ox1+2, uy0, uy1, uz0, Z_WALL_TOP+1))
-# wire entry holes with outside countersink
-for (wy,wz) in WIRE:
-    base = base.cut(cyl(WIRE_D, WALL+2, V(ox0-1,wy,wz), V(1,0,0)))
-    base = base.cut(Part.makeCone(WIRE_CSK/2, WIRE_D/2, (WIRE_CSK-WIRE_D)/2, V(ox0-0.001,wy,wz), V(1,0,0)))
+# cable entry: one round hole in the end wall, countersunk on the outside
+base = base.cut(cyl(CABLE_D, WALL+2, V(ox0-1, BL/2, CABLE_Z), V(1,0,0)))
+base = base.cut(Part.makeCone(CABLE_CSK/2, CABLE_D/2, (CABLE_CSK-CABLE_D)/2, V(ox0-0.001, BL/2, CABLE_Z), V(1,0,0)))
+# zip-tie anchor: two slots through the floor joined by a recess underneath, so the tie sits flush
+for sy in (BL/2-ZT_SPAN/2, BL/2+ZT_SPAN/2):
+    base = base.cut(box(ZT_X-ZT_SLOT_L/2, ZT_X+ZT_SLOT_L/2, sy-ZT_SLOT_W/2, sy+ZT_SLOT_W/2, Z_FLOOR_BOT-1, Z_FLOOR_TOP+1))
+base = base.cut(box(ZT_X-ZT_SLOT_L/2, ZT_X+ZT_SLOT_L/2, BL/2-ZT_SPAN/2-ZT_SLOT_W/2, BL/2+ZT_SPAN/2+ZT_SLOT_W/2, Z_FLOOR_BOT-1, Z_FLOOR_BOT+ZT_CH_D))
+# board end stops either side of the Wago, so the board cannot slide into the extension
+for (y0,y1) in ((iy0, 3.6), (BL-3.6, iy1)):
+    base = base.fuse(box(-CLR-1.0, -CLR, y0, y1, Z_FLOOR_TOP, 0.0))
 # floor vents
 for vx in VENT_X:
     base = base.cut(box(vx-VENT_W/2, vx+VENT_W/2, VENT_Y[0], VENT_Y[1], Z_FLOOR_BOT-1, Z_FLOOR_TOP+1))
@@ -119,7 +127,9 @@ comps = {
  "board": board,
 }
 if L3D and os.path.exists(L3D+"/292303-1.step"):
-    comps["USB J2"]  = load(L3D+"/292303-1.step",(172.1325,57.755,90.0),(3.5,-5.7,-2.8),(-90,0,0))
+    usb_full = load(L3D+"/292303-1.step",(172.1325,57.755,90.0),(3.5,-5.7,-2.8),(-90,0,0))
+    # the through-hole pins are trimmed flush on the real board: keep at most 0.8 mm below the PCB for the check
+    comps["USB J2 (pins trimmed)"] = usb_full.common(box(-20,60,-20,40,-BT-0.8,20))
     comps["Wago J1"] = load(L3D+"/Wago 2060-452.STEP",(148.265,54.255,0.0),(0,0,0),(-90,0,0))
 else:
     print("KICAD_3D_MODELS not set: skipping connector interference check")
@@ -157,8 +167,9 @@ def tris(shape):
     return {"v":[[p.x,p.y,p.z] for p in vs],"f":fs}
 exploded_lid = lid.copy(); exploded_lid.translate(V(0,0,14))
 prev={"base":tris(base),"lid":tris(exploded_lid),"board":tris(board),"ind":tris(comps["L1 7070 envelope"]),"lid_closed":tris(lid)}
-if "USB J2" in comps: prev["usb"]=tris(comps["USB J2"]); prev["wago"]=tris(comps["Wago J1"])
-json.dump(prev, open(SCR+"/preview.json","w"))
+if "USB J2 (pins trimmed)" in comps: prev["usb"]=tris(comps["USB J2 (pins trimmed)"]); prev["wago"]=tris(comps["Wago J1"])
+if os.environ.get("PREVIEW_JSON"): json.dump(prev, open(os.environ["PREVIEW_JSON"],"w"))
 json.dump({"outer_mm":[round(ox1-ox0,1),round(oy1-oy0,1),round(Z_LID_TOP-Z_FLOOR_BOT,1)],"wall":WALL,"floor":FLOOR,"lid":LID_T,
-           "usb_protrusion_mm":round(44.88-ox1,1),"screws":"3x M2.5 x 12 self-tapping, from below"}, open(OUT+"/case-dimensions.json","w"), indent=1)
+           "usb_protrusion_mm":round(44.88-ox1,1),"standoff":STAND,"wire_end_extension":EXT,"cable_hole_mm":CABLE_D,
+           "screws":"3x M2.5 x 10 self-tapping, from below"}, open(OUT+"/case-dimensions.json","w"), indent=1)
 print("DONE")

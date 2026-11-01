@@ -1,12 +1,15 @@
 {
  "outer_mm": [
-  44.8,
+  54.8,
   22.8,
-  18.2
+  16.2
  ],
  "wall": 2.0,
  "floor": 2.6,
  "lid": 2.0,
  "usb_protrusion_mm": 2.5,
- "screws": "3x M2.5 x 12 self-tapping, from below"
+ "standoff": 1.0,
+ "wire_end_extension": 10.0,
+ "cable_hole_mm": 7.0,
+ "screws": "3x M2.5 x 10 self-tapping, from below"
 }
