@@ -29,8 +29,8 @@ BOARD_DX = -0.5   # fit correction from the first print: the board sits 0.5 mm c
 USB_DX = 0.5      # measured with it: the real USB shell sits this much further out on the board than the KiCad model,
                   # so the end wall, the latch-tab groove and the J2 model stay where the flange really is
 HOLES = [(x+BOARD_DX, y) for (x,y) in BOARD_HOLES]
-PILLAR_D, PILLAR_HOLE = 5.5, 2.3                # base pillars, M2 clearance hole
-CB_D, CB_DEPTH = 4.6, 2.1                        # counterbore in the floor; a 2.0 mm pan head sits 0.1 mm below the bottom face
+PILLAR_D, PILLAR_HOLE = 5.5, 2.2                # clearance hole in the floor for the 1.9 mm thread (FDM holes print a little small)
+CB_D, CB_DEPTH = 4.2, 2.1                        # counterbore in the floor for the 3.7 mm head; a 2.0 mm head sits 0.1 mm below the bottom face
 BOSS_D, BOSS_HOLE, BOSS_DEPTH = 4.6, 1.6, 5.0    # lid bosses, 1.6 mm pilot for an M2 screw to self-tap into PLA/PETG
 SCREW_D, SCREW_L, HEAD_D, HEAD_H = 2.0, 6.0, 4.0, 1.6    # M2 x 6 pan-head screws, self-tapping into the lid bosses (ISO 7045 size head)
 USB_Y, USB_Z, USB_CLR = (2.43,15.57), (1.30,7.05), 0.5   # shell body section (Y, Z) and the gap around it in the wall slot
