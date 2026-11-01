@@ -25,8 +25,9 @@ LID_T = 2.0
 LIP_H, LIP_T, LIP_CLR = 2.5, 1.2, 0.2
 HOLES = [(5.5,15.5),(5.5,2.5),(27.57,9.0)]      # board mounting holes, 3.0 mm
 PILLAR_D, PILLAR_HOLE = 5.5, 2.7                # base pillars, M2.5 clearance
-CB_D, CB_DEPTH = 5.2, 1.8                        # counterbore for pan-head in floor
-BOSS_D, BOSS_HOLE, BOSS_DEPTH = 4.6, 2.0, 7.0    # lid bosses, M2.5 self-tap pilot
+CB_D, CB_DEPTH = 5.2, 2.1                        # counterbore in the floor; a 2.0 mm pan head sits 0.1 mm below the bottom face
+BOSS_D, BOSS_HOLE, BOSS_DEPTH = 4.6, 2.0, 7.5    # lid bosses, M2.5 self-tap pilot
+SCREW_D, SCREW_L, HEAD_D, HEAD_H = 2.5, 10.0, 5.0, 2.0   # M2.5 x 10 pan-head self-tapping screws (ISO 7045 size head)
 USB_Y, USB_Z, USB_CLR = (2.43,15.57), (1.30,7.05), 0.5
 CABLE_D, CABLE_Z, CABLE_CSK = 7.0, 1.5, 9.0     # round cable entry: hole, centre height above board top, outside countersink
 BTN_SLOTS = [(7.3,12.5,5.3,8.7),(7.3,12.5,9.3,12.7)]
@@ -36,8 +37,8 @@ VENT_X=[16.0,18.5,21.0,23.5]; VENT_W=1.2; VENT_Y=(3.5,14.5)
 ix0, iy0, ix1, iy1 = -CLR-EXT, -CLR, BW+CLR, BL+CLR      # cavity incl. wire-end extension
 ox0, oy0, ox1, oy1 = ix0-WALL, iy0-WALL, ix1+WALL, iy1+WALL
 IR, OR_ = BR+CLR, BR+CLR+WALL
-Z_FLOOR_BOT = -BT-STAND-FLOOR     # -7.2
-Z_FLOOR_TOP = -BT-STAND           # -4.6
+Z_FLOOR_BOT = -BT-STAND-FLOOR     # -5.2
+Z_FLOOR_TOP = -BT-STAND           # -2.6
 Z_WALL_TOP  = ABOVE               # 9.0
 Z_LID_TOP   = ABOVE+LID_T         # 11.0
 
@@ -104,6 +105,21 @@ try:
 except Exception as ex: print("lid chamfer skipped:", ex)
 
 base = base.removeSplitter(); lid = lid.removeSplitter()
+
+# ---------------- screws: M2.5 x 10 pan head, driven from below ----------------
+# head in the floor counterbore -> shank through floor, pillar and the 3 mm board hole -> self-taps into the lid boss
+Z_HEAD = Z_FLOOR_BOT+CB_DEPTH          # underside of the head rests on the counterbore bottom
+Z_TIP  = Z_HEAD+SCREW_L
+def screw(hx,hy):
+    s = cyl(HEAD_D, HEAD_H, V(hx,hy,Z_HEAD-HEAD_H))
+    for (dx,dy) in ((0.35,1.5),(1.5,0.35)):                                   # cross recess
+        s = s.cut(box(hx-dx,hx+dx,hy-dy,hy+dy, Z_HEAD-HEAD_H-0.1, Z_HEAD-HEAD_H+0.9))
+    s = s.fuse(cyl(SCREW_D, SCREW_L-0.5, V(hx,hy,Z_HEAD)))
+    s = s.fuse(Part.makeCone(SCREW_D/2, SCREW_D/2-0.5, 0.5, V(hx,hy,Z_TIP-0.5)))
+    return s.removeSplitter()
+screws = [screw(hx,hy) for (hx,hy) in HOLES]
+print("SCREW head Z %.1f..%.1f (case bottom %.1f), tip Z %.1f, pilot bottom Z %.1f, thread engagement %.1f mm" %
+      (Z_HEAD-HEAD_H, Z_HEAD, Z_FLOOR_BOT, Z_TIP, BOSS_DEPTH, Z_TIP))
 print("VALID base", base.isValid(), "lid", lid.isValid(), "solids", len(base.Solids), len(lid.Solids))
 print("VOL base %.0f mm3  lid %.0f mm3" % (base.Volume, lid.Volume))
 bb=base.BoundBox; print("BASE bbox X %.1f..%.1f Y %.1f..%.1f Z %.1f..%.1f" % (bb.XMin,bb.XMax,bb.YMin,bb.YMax,bb.ZMin,bb.ZMax))
@@ -137,6 +153,11 @@ for name,sh in comps.items():
         except Exception as ex:
             v=float('nan'); print("  common failed", name, cname, ex)
         print(f"INTERFERENCE {name:18} vs {cname}: {v:.3f} mm3")
+# screws: must clear base and board; the overlap with the lid is the material the thread cuts into
+exp_eng = math.pi*((SCREW_D/2)**2-(BOSS_HOLE/2)**2)*Z_TIP
+for i,s in enumerate(screws):
+    print("SCREW %d vs base %.3f  vs board %.3f  vs lid %.1f mm3 (thread engagement, expected %.1f)" %
+          (i+1, base.common(s).Volume, board.common(s).Volume, lid.common(s).Volume, exp_eng))
 
 # ---------------- export ----------------
 import Import, MeshPart, Mesh
@@ -145,6 +166,7 @@ def add(name,shape):
     o=doc.addObject("Part::Feature",name); o.Shape=shape; return o
 # assembled (board frame, for viewing)
 oA=[add("Case_Base",base), add("Case_Lid",lid), add("PCB_outline",board)]
+oA+=[add("Screw_M2.5x10_%d"%(i+1), s) for i,s in enumerate(screws)]
 doc.recompute()
 Import.export(oA, OUT+"/usb-adapter-case-assembled.step")
 # print orientation: base floor on Z=0; lid upside-down beside it
@@ -163,10 +185,20 @@ def tris(shape):
     vs,fs=shape.tessellate(0.08)
     return {"v":[[p.x,p.y,p.z] for p in vs],"f":fs}
 exploded_lid = lid.copy(); exploded_lid.translate(V(0,0,14))
-prev={"base":tris(base),"lid":tris(exploded_lid),"board":tris(board),"ind":tris(comps["L1 7070 envelope"]),"lid_closed":tris(lid)}
+allscrews = Part.makeCompound(screws)
+exploded_screws = allscrews.copy(); exploded_screws.translate(V(0,0,-12))
+prev={"base":tris(base),"lid":tris(exploded_lid),"board":tris(board),"ind":tris(comps["L1 7070 envelope"]),"lid_closed":tris(lid),
+      "screws":tris(exploded_screws),"screws_closed":tris(allscrews)}
 if "USB J2 (pins trimmed)" in comps: prev["usb"]=tris(comps["USB J2 (pins trimmed)"]); prev["wago"]=tris(comps["Wago J1"])
+# half section: keep Y >= board centre line, which cuts through the third screw and the cable hole
+half = box(ox0-5, ox1+10, BL/2, oy1+5, Z_FLOOR_BOT-5, Z_LID_TOP+5)
+secs = {"base":base,"lid":lid,"board":board,"screws":allscrews,"ind":comps["L1 7070 envelope"]}
+if "USB J2 (pins trimmed)" in comps: secs["usb"]=comps["USB J2 (pins trimmed)"]; secs["wago"]=comps["Wago J1"]
+for k,sh in secs.items():
+    try: prev[k+"_sec"]=tris(sh.common(half))
+    except Exception as ex: print("section failed", k, ex)
 if os.environ.get("PREVIEW_JSON"): json.dump(prev, open(os.environ["PREVIEW_JSON"],"w"))
 json.dump({"outer_mm":[round(ox1-ox0,1),round(oy1-oy0,1),round(Z_LID_TOP-Z_FLOOR_BOT,1)],"wall":WALL,"floor":FLOOR,"lid":LID_T,
            "usb_protrusion_mm":round(44.88-ox1,1),"standoff":STAND,"wire_end_extension":EXT,"cable_hole_mm":CABLE_D,
-           "screws":"3x M2.5 x 10 self-tapping, from below"}, open(OUT+"/case-dimensions.json","w"), indent=1)
+           "screws":"3x M2.5 x 10 pan-head self-tapping, from below; counterbore %.1f mm, pilot hole %.1f mm x %.1f mm deep" % (CB_DEPTH, BOSS_HOLE, BOSS_DEPTH)}, open(OUT+"/case-dimensions.json","w"), indent=1)
 print("DONE")

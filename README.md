@@ -112,7 +112,7 @@ A two-part enclosure generated from the PCB geometry, in `case/`:
 
 - `usb-adapter-case.step`: base and lid in print orientation (lid upside down). Also as
   `usb-adapter-case-base.stl` and `usb-adapter-case-lid.stl` for slicing.
-- `usb-adapter-case-assembled.step`: base, lid and PCB outline in their assembled positions.
+- `usb-adapter-case-assembled.step`: base, lid, PCB outline and the three screws in their assembled positions.
 - `make_case.py`: the parametric FreeCAD script that produced the files. Edit the parameter
   block at the top and re-run with `freecadcmd` to change clearances, wall thickness and so on.
 
@@ -123,7 +123,9 @@ A two-part enclosure generated from the PCB geometry, in `case/`:
 | USB end | U-shaped slot in the end wall; the lid carries a tab that closes the slot above the shell. The receptacle protrudes 2.5 mm so a plug seats fully. |
 | Wire end | The cavity extends 10 mm beyond the board. A single 7 mm countersunk hole in the end wall takes a two-core cable. The extension is free space for a zip tie cinched on the cable: the tie is bigger than the hole, so a yank on the cable stops at the tie instead of at the Wago connection. Two low ribs stop the board sliding into the extension. Two slots in the lid give screwdriver access to the Wago release buttons. |
 | Cooling | Vent slots in the lid, in the floor and in both long walls above the inductor and converter. |
-| Fastening | Three M2.5 × 10 self-tapping screws from below. They pass through the floor and the 3 mm board holes into bosses on the lid, clamping the board. Screw heads sit in counterbores in the floor. |
+| Fastening | Three M2.5 × 10 pan-head self-tapping screws driven from below. Each passes through a 2.7 mm hole in the floor and pillar, through a 3 mm board hole, and self-taps into a 2 mm pilot hole in a boss that hangs from the lid down to the board, so the board is clamped between pillar and boss. The heads sit in 5.2 × 2.1 mm counterbores, so the case stands flat. The lid locates with an inner lip before the screws go in. The screws are included in the assembled STEP. |
+
+![Half section through the case: screw through floor, board and lid boss](case/case-section.png)
 
 Assembly: feed the cable through the end wall, cinch a zip tie on it inside the extension,
 strip the two conductors and push them into the Wago. Drop the board into the base so the USB
