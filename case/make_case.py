@@ -15,7 +15,7 @@ PCB_STEP=os.path.join(os.getcwd(), "USB-Adapter.step")
 # ---------------- parameters (board frame: X 0..40 along length, Y 0..18 across, Z=0 = board top) ----------
 BW, BL, BT, BR = 40.0, 18.0, 1.6, 2.5
 CLR   = 0.4      # board edge to inner wall
-EXT   = 10.0     # extra cavity length at the wire end: room for a zip tie on the cable as a pull stop
+EXT   = 15.0     # board edge to the inside of the wire-end wall: room for a zip tie on the cable as a pull stop
 WALL  = 2.0
 FLOOR = 2.6
 STAND = 1.0      # floor top to board bottom (through-hole pins are trimmed flush)
@@ -31,11 +31,11 @@ USB_Y, USB_Z, USB_CLR = (2.43,15.57), (1.30,7.05), 0.5   # shell body section (Y
 USB_FLANGE_X, USB_FLANGE_GAP = 44.55, 0.3   # the shell's front flange starts here; the end wall stops this far short of it
 USB_TABS, TAB_CLR = (42.35, 42.50, 1.35, 16.65), 0.3   # side latch tabs on the shell (X range, Y reach): groove inside the wall
 WAGO_Y, WAGO_TOP, BOSS_FLAT_CLR = (5.04,12.96), 4.66, 0.45   # the two bosses beside the Wago get a flat up to its top
-CABLE_D, CABLE_Z, CABLE_CSK = 7.0, 1.5, 9.0     # round cable entry: hole, centre height above board top, outside countersink
+CABLE_D, CABLE_Z, CABLE_CSK = 7.5, 1.5, 9.5     # round cable entry: hole, centre height above board top, outside countersink
 BTN_SLOTS = [(7.3,12.5,5.3,8.7),(7.3,12.5,9.3,12.7)]
 
 # derived
-ix0, iy0, ix1, iy1 = -CLR-EXT, -CLR, BW+CLR, BL+CLR      # cavity incl. wire-end extension
+ix0, iy0, ix1, iy1 = -EXT, -CLR, BW+CLR, BL+CLR          # cavity incl. wire-end extension
 ox0, oy0, ox1, oy1 = ix0-WALL, iy0-WALL, USB_FLANGE_X-USB_FLANGE_GAP, iy1+WALL   # USB end wall is thicker: it reaches the flange
 IR, OR_ = BR+CLR, BR+CLR+WALL
 Z_FLOOR_BOT = -BT-STAND-FLOOR     # -5.2
@@ -66,7 +66,7 @@ base = base.cut(box(USB_TABS[0]-TAB_CLR, USB_TABS[1]+TAB_CLR, USB_TABS[2]-TAB_CL
 # cable entry: one round hole in the end wall, countersunk on the outside
 base = base.cut(cyl(CABLE_D, WALL+2, V(ox0-1, BL/2, CABLE_Z), V(1,0,0)))
 base = base.cut(Part.makeCone(CABLE_CSK/2, CABLE_D/2, (CABLE_CSK-CABLE_D)/2, V(ox0-0.001, BL/2, CABLE_Z), V(1,0,0)))
-# the 10 mm extension is free space: a zip tie cinched on the cable here is bigger than the
+# the extension is free space: a zip tie cinched on the cable here is bigger than the
 # entry hole, so a yank on the cable stops at the tie instead of at the Wago connection
 # board end stops either side of the Wago, so the board cannot slide into the extension
 for (y0,y1) in ((iy0, 3.6), (BL-3.6, iy1)):
