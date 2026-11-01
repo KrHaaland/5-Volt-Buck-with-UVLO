@@ -11,5 +11,6 @@
  "standoff": 1.0,
  "wire_end_extension": 18.0,
  "cable_hole_mm": 7.5,
+ "cable_hole_above_floor_mm": 1.5,
  "screws": "3x M2.5 x 10 pan-head self-tapping, from below; counterbore 2.1 mm, pilot hole 2.0 mm x 7.5 mm deep"
 }

@@ -31,7 +31,7 @@ USB_Y, USB_Z, USB_CLR = (2.43,15.57), (1.30,7.05), 0.5   # shell body section (Y
 USB_FLANGE_X, USB_FLANGE_GAP = 44.55, 0.3   # the shell's front flange starts here; the end wall stops this far short of it
 USB_TABS, TAB_CLR = (42.35, 42.50, 1.35, 16.65), 0.3   # side latch tabs on the shell (X range, Y reach): groove inside the wall
 WAGO_Y, WAGO_TOP, BOSS_FLAT_CLR = (5.04,12.96), 4.66, 0.45   # the two bosses beside the Wago get a flat up to its top
-CABLE_D, CABLE_Z = 7.5, 1.5                     # round cable entry: hole diameter, centre height above board top
+CABLE_D, CABLE_LIFT = 7.5, 1.5                  # round cable entry: hole diameter, gap between the floor and the bottom of the hole
 
 # derived
 ix0, iy0, ix1, iy1 = -EXT, -CLR, BW+CLR, BL+CLR          # cavity incl. wire-end extension
@@ -39,6 +39,7 @@ ox0, oy0, ox1, oy1 = ix0-WALL, iy0-WALL, USB_FLANGE_X-USB_FLANGE_GAP, iy1+WALL  
 IR, OR_ = BR+CLR, BR+CLR+WALL
 Z_FLOOR_BOT = -BT-STAND-FLOOR     # -5.2
 Z_FLOOR_TOP = -BT-STAND           # -2.6
+CABLE_Z = Z_FLOOR_TOP+CABLE_LIFT+CABLE_D/2   # 2.65: hole centre above board top
 Z_WALL_TOP  = ABOVE               # 9.0
 Z_LID_TOP   = ABOVE+LID_T         # 11.0
 
@@ -270,6 +271,6 @@ for k,sh in secs.items():
     except Exception as ex: print("section failed", k, ex)
 if os.environ.get("PREVIEW_JSON"): json.dump(prev, open(os.environ["PREVIEW_JSON"],"w"))
 json.dump({"outer_mm":[round(ox1-ox0,1),round(oy1-oy0,1),round(Z_LID_TOP-Z_FLOOR_BOT,1)],"wall":WALL,"floor":FLOOR,"lid":LID_T,
-           "usb_protrusion_mm":round(44.88-ox1,1),"standoff":STAND,"wire_end_extension":EXT,"cable_hole_mm":CABLE_D,
+           "usb_protrusion_mm":round(44.88-ox1,1),"standoff":STAND,"wire_end_extension":EXT,"cable_hole_mm":CABLE_D,"cable_hole_above_floor_mm":CABLE_LIFT,
            "screws":"3x M2.5 x 10 pan-head self-tapping, from below; counterbore %.1f mm, pilot hole %.1f mm x %.1f mm deep" % (CB_DEPTH, BOSS_HOLE, BOSS_DEPTH)}, open(OUT+"/case-dimensions.json","w"), indent=1)
 print("DONE")
