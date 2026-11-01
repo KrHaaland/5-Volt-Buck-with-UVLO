@@ -1,6 +1,6 @@
 {
  "outer_mm": [
-  61.2,
+  64.2,
   22.8,
   16.2
  ],
@@ -9,7 +9,7 @@
  "lid": 2.0,
  "usb_protrusion_mm": 0.6,
  "standoff": 1.0,
- "wire_end_extension": 15.0,
+ "wire_end_extension": 18.0,
  "cable_hole_mm": 7.5,
  "screws": "3x M2.5 x 10 pan-head self-tapping, from below; counterbore 2.1 mm, pilot hole 2.0 mm x 7.5 mm deep"
 }

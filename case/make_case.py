@@ -15,7 +15,7 @@ PCB_STEP=os.path.join(os.getcwd(), "USB-Adapter.step")
 # ---------------- parameters (board frame: X 0..40 along length, Y 0..18 across, Z=0 = board top) ----------
 BW, BL, BT, BR = 40.0, 18.0, 1.6, 2.5
 CLR   = 0.4      # board edge to inner wall
-EXT   = 15.0     # board edge to the inside of the wire-end wall: room for a zip tie on the cable as a pull stop
+EXT   = 18.0     # board edge to the inside of the wire-end wall: room for a zip tie on the cable as a pull stop
 WALL  = 2.0
 FLOOR = 2.6
 STAND = 1.0      # floor top to board bottom (through-hole pins are trimmed flush)
