@@ -30,9 +30,9 @@ USB_DX = 0.5      # measured with it: the real USB shell sits this much further 
                   # so the end wall, the latch-tab groove and the J2 model stay where the flange really is
 HOLES = [(x+BOARD_DX, y) for (x,y) in BOARD_HOLES]
 PILLAR_D, PILLAR_HOLE = 5.5, 2.3                # base pillars, M2 clearance hole
-CB_D, CB_DEPTH = 4.6, 2.1                        # counterbore in the floor; the 2.0 mm cheese head sits 0.1 mm below the bottom face
+CB_D, CB_DEPTH = 4.6, 2.1                        # counterbore in the floor; a 2.0 mm pan head sits 0.1 mm below the bottom face
 BOSS_D, BOSS_HOLE, BOSS_DEPTH = 4.6, 1.6, 5.0    # lid bosses, 1.6 mm pilot for an M2 screw to self-tap into PLA/PETG
-SCREW_D, SCREW_L, HEAD_D, HEAD_H = 2.0, 6.0, 3.8, 2.0    # M2 x 6 cheese-head Torx screws (ISO 14580), self-tapping into the lid bosses
+SCREW_D, SCREW_L, HEAD_D, HEAD_H = 2.0, 6.0, 4.0, 1.6    # M2 x 6 pan-head screws, self-tapping into the lid bosses (ISO 7045 size head)
 USB_Y, USB_Z, USB_CLR = (2.43,15.57), (1.30,7.05), 0.5   # shell body section (Y, Z) and the gap around it in the wall slot
 USB_FLANGE_X, USB_FLANGE_GAP = 44.55, 0.3   # the shell's front flange starts here; the end wall stops this far short of it
 USB_TABS, TAB_CLR = (42.35, 42.50, 1.35, 16.65), 0.3   # side latch tabs on the shell (X range, Y reach): groove inside the wall
@@ -106,17 +106,14 @@ for (hx,hy) in HOLES:
 
 base = base.removeSplitter(); lid = lid.removeSplitter()
 
-# ---------------- screws: M2 x 6 cheese head, Torx, driven from below ----------------
+# ---------------- screws: M2 x 6 pan head, driven from below ----------------
 # head in the floor counterbore -> shank through floor, pillar and the 3 mm board hole -> self-taps into the lid boss
 Z_HEAD = Z_FLOOR_BOT+CB_DEPTH          # underside of the head rests on the counterbore bottom
 Z_TIP  = Z_HEAD+SCREW_L
 def screw(hx,hy):
     s = cyl(HEAD_D, HEAD_H, V(hx,hy,Z_HEAD-HEAD_H))
-    rec = cyl(1.4, 1.1, V(hx,hy,Z_HEAD-HEAD_H-0.1))                           # hexalobular (T6) recess, approximated
-    for i in range(6):
-        a = math.radians(60*i)
-        rec = rec.fuse(cyl(0.6, 1.1, V(hx+0.65*math.cos(a), hy+0.65*math.sin(a), Z_HEAD-HEAD_H-0.1)))
-    s = s.cut(rec)
+    for (dx,dy) in ((0.35,1.5),(1.5,0.35)):                                   # cross recess
+        s = s.cut(box(hx-dx,hx+dx,hy-dy,hy+dy, Z_HEAD-HEAD_H-0.1, Z_HEAD-HEAD_H+0.9))
     s = s.fuse(cyl(SCREW_D, SCREW_L-0.5, V(hx,hy,Z_HEAD)))
     s = s.fuse(Part.makeCone(SCREW_D/2, SCREW_D/2-0.5, 0.5, V(hx,hy,Z_TIP-0.5)))
     return s.removeSplitter()
@@ -233,7 +230,7 @@ Import.export(oA, OUT+"/usb-adapter-case-assembled.step")
 asm=doc.addObject("App::Part","USB_Adapter"); asm.Label="USB-Adapter assembly"
 grp=doc.addObject("App::Part","Case"); grp.Label="Case"; asm.addObject(grp)
 add("Base", base, grp); add("Lid", lid, grp)
-for i,s in enumerate(screws): add("Screw %d M%gx%g cheese head Torx"%(i+1,SCREW_D,SCREW_L), s, grp)
+for i,s in enumerate(screws): add("Screw %d M%gx%g pan head"%(i+1,SCREW_D,SCREW_L), s, grp)
 pgrp=doc.addObject("App::Part","PCB"); pgrp.Label="PCB"; asm.addObject(pgrp)
 named=[]
 for n,sh in pcb_parts:
@@ -285,5 +282,5 @@ for k,sh in secs.items():
 if os.environ.get("PREVIEW_JSON"): json.dump(prev, open(os.environ["PREVIEW_JSON"],"w"))
 json.dump({"outer_mm":[round(ox1-ox0,1),round(oy1-oy0,1),round(Z_LID_TOP-Z_FLOOR_BOT,1)],"wall":WALL,"floor":FLOOR,"lid":LID_T,
            "usb_protrusion_mm":round(44.88-ox1,1),"standoff":STAND,"wire_end_extension":EXT,"cable_hole_mm":CABLE_D,"cable_hole_above_floor_mm":CABLE_LIFT,"board_offset_mm":BOARD_DX,"board_edge_to_cable_wall_mm":round(BOARD_DX-ix0,1),
-           "screws":"3x M%g x %g cheese-head Torx (ISO 14580), self-tapping into the lid bosses, from below; counterbore %.1f x %.1f mm, pilot hole %.1f mm x %.1f mm deep, thread engagement %.1f mm" % (SCREW_D, SCREW_L, CB_D, CB_DEPTH, BOSS_HOLE, BOSS_DEPTH, Z_TIP)}, open(OUT+"/case-dimensions.json","w"), indent=1)
+           "screws":"3x M%g x %g pan-head, self-tapping into the lid bosses, from below; counterbore %.1f x %.1f mm, pilot hole %.1f mm x %.1f mm deep, thread engagement %.1f mm" % (SCREW_D, SCREW_L, CB_D, CB_DEPTH, BOSS_HOLE, BOSS_DEPTH, Z_TIP)}, open(OUT+"/case-dimensions.json","w"), indent=1)
 print("DONE")
