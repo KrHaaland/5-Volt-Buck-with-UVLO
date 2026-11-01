@@ -113,13 +113,16 @@ A two-part enclosure generated from the PCB geometry, in `case/`:
 - `usb-adapter-case.step`: base and lid in print orientation (lid upside down). Also as
   `usb-adapter-case-base.stl` and `usb-adapter-case-lid.stl` for slicing.
 - `usb-adapter-case-assembled.step`: base, lid, PCB outline and the three screws in their assembled positions.
-- `make_case.py`: the parametric FreeCAD script that produced the files. Edit the parameter
-  block at the top and re-run with `freecadcmd` to change clearances, wall thickness and so on.
+- `make_case.py`: the parametric FreeCAD script that produced the files. It reads the populated
+  board from `USB-Adapter.step` in the repository root (the KiCad STEP export), removes everything
+  below the board bottom because the pins are cut flush, and checks every component against base
+  and lid. Edit the parameter block at the top and re-run with `freecadcmd` to change clearances,
+  wall thickness and so on.
 
 | | |
 |---|---|
 | Outer size | 54.8 × 22.8 × 16.2 mm, 2 mm walls, 2.6 mm floor, 2 mm lid |
-| Board clearance | 0.4 mm to the walls, 1 mm standoff under the board (the through-hole pins are trimmed flush), 9 mm above the board |
+| Board clearance | 0.4 mm to the walls, 1 mm standoff under the board (the through-hole pins are trimmed flush), 9 mm above the board. The two lid bosses beside the Wago are flattened on the connector side up to its height, leaving 0.45 mm. |
 | USB end | U-shaped slot in the end wall; the lid carries a tab that closes the slot above the shell. The receptacle protrudes 2.5 mm so a plug seats fully. |
 | Wire end | The cavity extends 10 mm beyond the board. A single 7 mm countersunk hole in the end wall takes a two-core cable. The extension is free space for a zip tie cinched on the cable: the tie is bigger than the hole, so a yank on the cable stops at the tie instead of at the Wago connection. Two low ribs stop the board sliding into the extension. Two slots in the lid give screwdriver access to the Wago release buttons. |
 | Cooling | Vent slots in the lid, in the floor and in both long walls above the inductor and converter. |
@@ -129,13 +132,15 @@ A two-part enclosure generated from the PCB geometry, in `case/`:
 
 Assembly: feed the cable through the end wall, cinch a zip tie on it inside the extension,
 strip the two conductors and push them into the Wago. Drop the board into the base so the USB
-shell slides down into the end slot, fit the lid, and drive the three screws from underneath. The case was checked for interference against the connector STEP models
-(USB pins modelled as trimmed to 0.8 mm) and a 7070 inductor envelope with zero overlap, but
-it has not been printed yet, so treat the first print as a fit check.
+shell slides down into the end slot, fit the lid, and drive the three screws from underneath. Every part of the exported board (`USB-Adapter.step`, pins cut flush) was checked against base and
+lid: no overlaps, and nothing closer than 0.45 mm (the lid bosses beside the Wago). The inductor is
+checked as a 7070 envelope because the KiCad model on the board is the smaller 6060 package. The
+case has not been printed yet, so treat the first print as a fit check.
 
 ## Repository contents
 
 - `USB-Adapter.kicad_pro`, `.kicad_sch`, `.kicad_pcb`: KiCad project, schematic and board.
+- `USB-Adapter.step`: STEP export of the populated board from KiCad; the case script reads it.
 - `schematic.pdf`: plotted schematic.
 - `images/`: photo of the assembled board and a 3D render.
 - `case/`: 3D-printable enclosure (STEP, STL, previews) and the FreeCAD script that generates it.

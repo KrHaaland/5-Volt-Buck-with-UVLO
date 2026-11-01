@@ -5,13 +5,12 @@ Y across the 18 mm width, Z=0 at the PCB top surface. All sizes in mm.
 Generated with FreeCAD 0.21 (freecadcmd). Edit the parameter block and re-run.
 """
 import FreeCAD, Part, math, json, os
-from FreeCAD import Vector as V, Matrix, Placement
+from FreeCAD import Vector as V
 # Run with:  freecadcmd -c "exec(open('case/make_case.py').read())"   (from the repo root)
-# Outputs STEP/STL into the case/ folder. Set KICAD_3D_MODELS to the folder holding
-# 292303-1.step and "Wago 2060-452.STEP" to enable the interference check; otherwise it is skipped.
+# Outputs STEP/STL into the case/ folder. The populated board comes from USB-Adapter.step, the
+# KiCad STEP export in the repo root, and every part of it is checked against the case.
 OUT=os.path.join(os.getcwd(), "case"); os.makedirs(OUT, exist_ok=True)
-SCR=OUT
-L3D=os.environ.get("KICAD_3D_MODELS", "")
+PCB_STEP=os.path.join(os.getcwd(), "USB-Adapter.step")
 
 # ---------------- parameters (board frame: X 0..40 along length, Y 0..18 across, Z=0 = board top) ----------
 BW, BL, BT, BR = 40.0, 18.0, 1.6, 2.5
@@ -29,6 +28,7 @@ CB_D, CB_DEPTH = 5.2, 2.1                        # counterbore in the floor; a 2
 BOSS_D, BOSS_HOLE, BOSS_DEPTH = 4.6, 2.0, 7.5    # lid bosses, M2.5 self-tap pilot
 SCREW_D, SCREW_L, HEAD_D, HEAD_H = 2.5, 10.0, 5.0, 2.0   # M2.5 x 10 pan-head self-tapping screws (ISO 7045 size head)
 USB_Y, USB_Z, USB_CLR = (2.43,15.57), (1.30,7.05), 0.5
+WAGO_Y, WAGO_TOP, BOSS_FLAT_CLR = (5.04,12.96), 4.66, 0.45   # the two bosses beside the Wago get a flat up to its top
 CABLE_D, CABLE_Z, CABLE_CSK = 7.0, 1.5, 9.0     # round cable entry: hole, centre height above board top, outside countersink
 BTN_SLOTS = [(7.3,12.5,5.3,8.7),(7.3,12.5,9.3,12.7)]
 VENT_X=[16.0,18.5,21.0,23.5]; VENT_W=1.2; VENT_Y=(3.5,14.5)
@@ -94,6 +94,12 @@ for (hx,hy) in HOLES:
     lid = lid.fuse(cyl(BOSS_D, ABOVE, V(hx,hy,0)))
 for (hx,hy) in HOLES:
     lid = lid.cut(cyl(BOSS_HOLE, BOSS_DEPTH, V(hx,hy,-0.001)))
+    # the board holes beside the Wago leave only 1 mm between hole edge and connector body: flatten the
+    # boss on that side, but only as high as the connector, so the threaded part above keeps a full wall
+    if hy < WAGO_Y[0] and hy+BOSS_D/2 > WAGO_Y[0]-BOSS_FLAT_CLR:
+        lid = lid.cut(box(hx-BOSS_D, hx+BOSS_D, WAGO_Y[0]-BOSS_FLAT_CLR, WAGO_Y[0]+1, -1, WAGO_TOP+USB_CLR))
+    if hy > WAGO_Y[1] and hy-BOSS_D/2 < WAGO_Y[1]+BOSS_FLAT_CLR:
+        lid = lid.cut(box(hx-BOSS_D, hx+BOSS_D, WAGO_Y[1]-1, WAGO_Y[1]+BOSS_FLAT_CLR, -1, WAGO_TOP+USB_CLR))
 # Wago push-button access slots and vents through the plate
 for (x0,x1,y0,y1) in BTN_SLOTS:
     lid = lid.cut(box(x0,x1,y0,y1, Z_WALL_TOP-LIP_H-1, Z_LID_TOP+1))
@@ -125,34 +131,44 @@ print("VOL base %.0f mm3  lid %.0f mm3" % (base.Volume, lid.Volume))
 bb=base.BoundBox; print("BASE bbox X %.1f..%.1f Y %.1f..%.1f Z %.1f..%.1f" % (bb.XMin,bb.XMax,bb.YMin,bb.YMax,bb.ZMin,bb.ZMax))
 bb=lid.BoundBox;  print("LID  bbox X %.1f..%.1f Y %.1f..%.1f Z %.1f..%.1f" % (bb.XMin,bb.XMax,bb.YMin,bb.YMax,bb.ZMin,bb.ZMax))
 
-# ---------------- board + component models for interference check ----------------
-X0,Y0=140.265,63.255
-def kx(fp, off, rot):
-    px,py,prot=fp; rx,ry,rz=rot; m=Matrix()
-    m.rotateX(math.radians(-rx)); m.rotateY(math.radians(-ry)); m.rotateZ(math.radians(-rz))
-    m.move(V(*off)); m.rotateZ(math.radians(prot)); m.move(V(px-X0, Y0-py, 0)); return m
-def load(path,fp,off,rot):
-    sh=Part.Shape(); sh.read(path); sh.Placement=Placement(kx(fp,off,rot)); return sh
-board = rrect(0,0,BW,BL,BR,-BT,BT)
+# ---------------- populated board from the KiCad STEP export ----------------
+# KiCad writes the export in layout coordinates: X as drawn, Y negated, Z=0 at the board bottom with the
+# components seated at 1.595 (1.51 mm dielectric plus copper). Shift that into the board frame used here.
+# The through-hole pins are cut flush on the real board, so everything below the board bottom is removed.
+PCB_X0, PCB_Y0, PCB_Z0 = 140.265, 63.255, 1.595
+board = rrect(0,0,BW,BL,BR,-BT,BT)                         # fallback outline if the export is missing
 for (hx,hy) in HOLES: board = board.cut(cyl(3.0, BT+2, V(hx,hy,-BT-1)))
-comps = {
- "L1 7070 envelope": box(19.085-4.15,19.085+4.15,6.755-4.15,6.755+4.15,0,7.3),
- "board": board,
-}
-if L3D and os.path.exists(L3D+"/292303-1.step"):
-    usb_full = load(L3D+"/292303-1.step",(172.1325,57.755,90.0),(3.5,-5.7,-2.8),(-90,0,0))
-    # the through-hole pins are trimmed flush on the real board: keep at most 0.8 mm below the PCB for the check
-    comps["USB J2 (pins trimmed)"] = usb_full.common(box(-20,60,-20,40,-BT-0.8,20))
-    comps["Wago J1"] = load(L3D+"/Wago 2060-452.STEP",(148.265,54.255,0.0),(0,0,0),(-90,0,0))
+comps = {"L1 7070 envelope": box(19.085-4.15,19.085+4.15,6.755-4.15,6.755+4.15,0,7.3)}  # fitted part is a 7070, the KiCad model is a 6060
+pcb_parts = []
+if os.path.exists(PCB_STEP):
+    import Import
+    pdoc = FreeCAD.newDocument("pcb"); Import.insert(PCB_STEP, "pcb")
+    flush = box(-5, BW+10, -5, BL+5, -BT, 30)
+    objs = [o for o in pdoc.Objects if hasattr(o,"Shape") and o.Shape.Solids and o.Shape.BoundBox.XMin > 100]
+    whole = max(objs, key=lambda o: len(o.Shape.Solids))     # the top-level assembly compound
+    for o in objs:
+        if o is whole: continue
+        sh = o.Shape.copy(); sh.translate(V(-PCB_X0, PCB_Y0, -PCB_Z0)); sh = sh.common(flush)
+        if sh.Volume < 1e-6: continue
+        if sh.Volume > 900: board = sh; pcb_parts.append(("PCB", sh)); continue
+        pcb_parts.append((o.Label, sh)); comps[o.Label] = sh
+    FreeCAD.closeDocument(pdoc.Name)
+    zs=[sh.BoundBox for n,sh in pcb_parts]
+    print("PCB STEP: %d parts, Z %.2f..%.2f in the board frame after removing everything below the board bottom" %
+          (len(pcb_parts), min(b.ZMin for b in zs), max(b.ZMax for b in zs)))
 else:
-    print("KICAD_3D_MODELS not set: skipping connector interference check")
+    print("USB-Adapter.step not found: checking the board outline and inductor envelope only")
+comps["board"] = board
+worst = 99
 for name,sh in comps.items():
     for cname,c in (("base",base),("lid",lid)):
         try:
-            v=c.common(sh).Volume
+            v=c.common(sh).Volume; d=0.0 if v>1e-6 else c.distToShape(sh)[0]
         except Exception as ex:
-            v=float('nan'); print("  common failed", name, cname, ex)
-        print(f"INTERFERENCE {name:18} vs {cname}: {v:.3f} mm3")
+            v=float('nan'); d=float('nan'); print("  check failed", name, cname, ex)
+        if name!="board": worst=min(worst,d)
+        print(f"CHECK {name:28} vs {cname}: overlap {v:7.3f} mm3   clearance {d:5.2f} mm")
+print("CLOSEST component to the case: %.2f mm" % worst)
 # screws: must clear base and board; the overlap with the lid is the material the thread cuts into
 exp_eng = math.pi*((SCREW_D/2)**2-(BOSS_HOLE/2)**2)*Z_TIP
 for i,s in enumerate(screws):
@@ -167,6 +183,7 @@ def add(name,shape):
 # assembled (board frame, for viewing)
 oA=[add("Case_Base",base), add("Case_Lid",lid), add("PCB_outline",board)]
 oA+=[add("Screw_M2.5x10_%d"%(i+1), s) for i,s in enumerate(screws)]
+oA+=[add(n.replace(" ","_"), sh) for n,sh in pcb_parts if n!="PCB"]   # the populated board, pins flush
 doc.recompute()
 Import.export(oA, OUT+"/usb-adapter-case-assembled.step")
 # print orientation: base floor on Z=0; lid upside-down beside it
@@ -187,13 +204,14 @@ def tris(shape):
 exploded_lid = lid.copy(); exploded_lid.translate(V(0,0,14))
 allscrews = Part.makeCompound(screws)
 exploded_screws = allscrews.copy(); exploded_screws.translate(V(0,0,-12))
+parts = Part.makeCompound([sh for n,sh in pcb_parts if n!="PCB"]) if pcb_parts else None
 prev={"base":tris(base),"lid":tris(exploded_lid),"board":tris(board),"ind":tris(comps["L1 7070 envelope"]),"lid_closed":tris(lid),
       "screws":tris(exploded_screws),"screws_closed":tris(allscrews)}
-if "USB J2 (pins trimmed)" in comps: prev["usb"]=tris(comps["USB J2 (pins trimmed)"]); prev["wago"]=tris(comps["Wago J1"])
+if parts: prev["parts"]=tris(parts)
 # half section: keep Y >= board centre line, which cuts through the third screw and the cable hole
 half = box(ox0-5, ox1+10, BL/2, oy1+5, Z_FLOOR_BOT-5, Z_LID_TOP+5)
 secs = {"base":base,"lid":lid,"board":board,"screws":allscrews,"ind":comps["L1 7070 envelope"]}
-if "USB J2 (pins trimmed)" in comps: secs["usb"]=comps["USB J2 (pins trimmed)"]; secs["wago"]=comps["Wago J1"]
+if parts: secs["parts"]=parts
 for k,sh in secs.items():
     try: prev[k+"_sec"]=tris(sh.common(half))
     except Exception as ex: print("section failed", k, ex)
