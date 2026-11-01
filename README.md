@@ -112,7 +112,11 @@ A two-part enclosure generated from the PCB geometry, in `case/`:
 
 - `usb-adapter-case.step`: base and lid in print orientation (lid upside down). Also as
   `usb-adapter-case-base.stl` and `usb-adapter-case-lid.stl` for slicing.
-- `usb-adapter-case-assembled.step`: base, lid, PCB outline and the three screws in their assembled positions.
+- `usb-adapter-assembly.step`: the complete unit as a STEP assembly: case (base, lid, three screws)
+  and the populated board, every part named by its reference designator (J1, J2, L1, U1, C1 to C11,
+  R1 to R7). R3 is left out because that footprint is not populated. Open this one to see how it
+  all goes together.
+- `usb-adapter-case-assembled.step`: base, lid and the three screws only, in their closed positions.
 - `make_case.py`: the parametric FreeCAD script that produced the files. It reads the populated
   board from `USB-Adapter.step` in the repository root (the KiCad STEP export), removes everything
   below the board bottom because the pins are cut flush, and checks every component against base

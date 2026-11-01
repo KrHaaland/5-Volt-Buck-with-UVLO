@@ -4,7 +4,7 @@ Board frame: X along the 40 mm length (Wago end at X=0, USB end at X=40),
 Y across the 18 mm width, Z=0 at the PCB top surface. All sizes in mm.
 Generated with FreeCAD 0.21 (freecadcmd). Edit the parameter block and re-run.
 """
-import FreeCAD, Part, math, json, os
+import FreeCAD, Part, math, json, os, re
 from FreeCAD import Vector as V
 # Run with:  freecadcmd -c "exec(open('case/make_case.py').read())"   (from the repo root)
 # Outputs STEP/STL into the case/ folder. The populated board comes from USB-Adapter.step, the
@@ -136,6 +136,42 @@ bb=lid.BoundBox;  print("LID  bbox X %.1f..%.1f Y %.1f..%.1f Z %.1f..%.1f" % (bb
 # components seated at 1.595 (1.51 mm dielectric plus copper). Shift that into the board frame used here.
 # The through-hole pins are cut flush on the real board, so everything below the board bottom is removed.
 PCB_X0, PCB_Y0, PCB_Z0 = 140.265, 63.255, 1.595
+DNP = {"R3"}      # footprints that are not populated on the boards (R3: RT left floating)
+# ---------------- reference designators from the KiCad board file ----------------
+def kicad_refs(path):
+    """[(reference, x, y)] for every footprint in the .kicad_pcb, origin in the board frame used here."""
+    if not os.path.exists(path): return []
+    t=open(path, encoding="utf-8").read(); out=[]; i=0; n=len(t)
+    while True:
+        i=t.find("(footprint ", i)
+        if i<0: break
+        depth=0; j=i; q=False; at=None
+        while j<n:                                   # matching close paren, skipping quoted strings
+            ch=t[j]
+            if q:
+                if ch=="\\": j+=1
+                elif ch=='"': q=False
+            elif ch=='"': q=True
+            elif ch=="(":
+                depth+=1
+                if depth==2 and at is None and t.startswith("(at ", j):      # the footprint's own position
+                    at=re.match(r"\(at (-?[\d.]+) (-?[\d.]+)", t[j:j+60])
+            elif ch==")":
+                depth-=1
+                if depth==0: break
+            j+=1
+        r=re.search(r'\(property "Reference" "([^"]*)"', t[i:j+1])
+        if at and r and r.group(1) and not r.group(1).startswith("G"):
+            out.append((r.group(1), float(at.group(1))-PCB_X0, PCB_Y0-float(at.group(2))))
+        i=j+1
+    return out
+REFS = kicad_refs(os.path.join(os.getcwd(), "USB-Adapter.kicad_pcb"))
+def refdes(sh):
+    """reference whose footprint origin lies inside the part's footprint, nearest the part centre"""
+    bb=sh.BoundBox; cx,cy=bb.Center.x,bb.Center.y
+    hits=[(math.hypot(x-cx,y-cy), r) for (r,x,y) in REFS if bb.XMin-0.3<=x<=bb.XMax+0.3 and bb.YMin-0.3<=y<=bb.YMax+0.3]
+    return min(hits)[1] if hits else ""
+
 board = rrect(0,0,BW,BL,BR,-BT,BT)                         # fallback outline if the export is missing
 for (hx,hy) in HOLES: board = board.cut(cyl(3.0, BT+2, V(hx,hy,-BT-1)))
 comps = {"L1 7070 envelope": box(19.085-4.15,19.085+4.15,6.755-4.15,6.755+4.15,0,7.3)}  # fitted part is a 7070, the KiCad model is a 6060
@@ -151,7 +187,11 @@ if os.path.exists(PCB_STEP):
         sh = o.Shape.copy(); sh.translate(V(-PCB_X0, PCB_Y0, -PCB_Z0)); sh = sh.common(flush)
         if sh.Volume < 1e-6: continue
         if sh.Volume > 900: board = sh; pcb_parts.append(("PCB", sh)); continue
-        pcb_parts.append((o.Label, sh)); comps[o.Label] = sh
+        label = re.sub(r"(Metric)\d{3}$", r"\1", o.Label)          # drop KiCad's duplicate-model suffix
+        ref = refdes(sh)
+        if ref in DNP: continue
+        label = (ref+" "+label).strip()
+        pcb_parts.append((label, sh)); comps[label] = sh
     FreeCAD.closeDocument(pdoc.Name)
     zs=[sh.BoundBox for n,sh in pcb_parts]
     print("PCB STEP: %d parts, Z %.2f..%.2f in the board frame after removing everything below the board bottom" %
@@ -178,14 +218,28 @@ for i,s in enumerate(screws):
 # ---------------- export ----------------
 import Import, MeshPart, Mesh
 doc=FreeCAD.newDocument("case")
-def add(name,shape):
-    o=doc.addObject("Part::Feature",name); o.Shape=shape; return o
-# assembled (board frame, for viewing)
-oA=[add("Case_Base",base), add("Case_Lid",lid), add("PCB_outline",board)]
-oA+=[add("Screw_M2.5x10_%d"%(i+1), s) for i,s in enumerate(screws)]
-oA+=[add(n.replace(" ","_"), sh) for n,sh in pcb_parts if n!="PCB"]   # the populated board, pins flush
+def add(name,shape,group=None):
+    o=doc.addObject("Part::Feature",name); o.Shape=shape; o.Label=name
+    if group is not None: group.addObject(o)
+    return o
+# case only, assembled: base, lid and screws in their closed positions
+oA=[add("Case_Base",base), add("Case_Lid",lid)]+[add("Screw_M2.5x10_%d"%(i+1), s) for i,s in enumerate(screws)]
 doc.recompute()
 Import.export(oA, OUT+"/usb-adapter-case-assembled.step")
+# full assembly: case and populated board as a two-level STEP assembly, parts named by reference designator
+asm=doc.addObject("App::Part","USB_Adapter"); asm.Label="USB-Adapter assembly"
+grp=doc.addObject("App::Part","Case"); grp.Label="Case"; asm.addObject(grp)
+add("Base", base, grp); add("Lid", lid, grp)
+for i,s in enumerate(screws): add("Screw %d M2.5x10 pan head"%(i+1), s, grp)
+pgrp=doc.addObject("App::Part","PCB"); pgrp.Label="PCB"; asm.addObject(pgrp)
+named=[]
+for n,sh in pcb_parts:
+    label = "Board 40x18x1.6" if n=="PCB" else n+(" (fitted part is a 7070)" if n.startswith("L1 ") else "")
+    if n!="PCB": named.append(label)
+    add(label, sh, pgrp)
+doc.recompute()
+Import.export([asm], OUT+"/usb-adapter-assembly.step")
+print("ASSEMBLY parts:", ", ".join(named))
 # print orientation: base floor on Z=0; lid upside-down beside it
 base_p = base.copy(); base_p.translate(V(0,0,-Z_FLOOR_BOT))
 lid_p = lid.copy(); lid_p.rotate(V(0,0,0),V(1,0,0),180); lid_p.translate(V(0, oy1+ (oy1-oy0) + 10, Z_LID_TOP))  # mirrored in Y by the flip, then shifted
