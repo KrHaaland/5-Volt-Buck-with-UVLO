@@ -114,6 +114,8 @@ A two-part enclosure generated from the PCB geometry, in `case/`:
 
 - `usb-adapter-case.step`: base and lid in print orientation (lid upside down). Also as
   `usb-adapter-case-base.stl` and `usb-adapter-case-lid.stl` for slicing.
+- `usb-adapter-case-base.step` and `usb-adapter-case-lid.step`: the two parts as separate files,
+  same print orientation.
 - `usb-adapter-assembly.step`: the complete unit as a STEP assembly: case (base, lid, three screws)
   and the populated board, every part named by its reference designator (J1, J2, L1, U1, C1 to C11,
   R1 to R7). R3 is left out because that footprint is not populated. Open this one to see how it

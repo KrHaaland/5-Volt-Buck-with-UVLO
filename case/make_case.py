@@ -5,7 +5,7 @@ Y across the 18 mm width, Z=0 at the PCB top surface. All sizes in mm.
 Generated with FreeCAD 0.21 (freecadcmd). Edit the parameter block and re-run.
 """
 import FreeCAD, Part, math, json, os, re
-from FreeCAD import Vector as V
+from FreeCAD import Vector as V, Matrix
 # Run with:  freecadcmd -c "exec(open('case/make_case.py').read())"   (from the repo root)
 # Outputs STEP/STL into the case/ folder. The populated board comes from USB-Adapter.step, the
 # KiCad STEP export in the repo root, and every part of it is checked against the case.
@@ -230,12 +230,22 @@ doc.recompute()
 Import.export([asm], OUT+"/usb-adapter-assembly.step")
 print("ASSEMBLY parts:", ", ".join(named))
 # print orientation: base floor on Z=0; lid upside-down beside it
-base_p = base.copy(); base_p.translate(V(0,0,-Z_FLOOR_BOT))
-lid_p = lid.copy(); lid_p.rotate(V(0,0,0),V(1,0,0),180); lid_p.translate(V(0, oy1+ (oy1-oy0) + 10, Z_LID_TOP))  # mirrored in Y by the flip, then shifted
-lb=lid_p.BoundBox; lid_p.translate(V(0, (oy0 + (oy1-oy0) + 10) - lb.YMin, -lb.ZMin))
+def moved(shape, dx=0, dy=0, dz=0, flip=False):
+    """bake the move (and an optional 180 deg flip about X) into the shape itself: a plain translate() only sets
+    a Placement, which a single-object STEP export drops"""
+    m=Matrix()
+    if flip: m.rotateX(math.pi)
+    m.move(V(dx,dy,dz)); out=shape.copy(); out.transformShape(m, True); return out
+base_p = moved(base, dz=-Z_FLOOR_BOT)                                   # floor on Z=0
+lid_f = moved(lid, flip=True); lb=lid_f.BoundBox                        # upside down
+lid_p = moved(lid_f, dy=(oy1+10)-lb.YMin, dz=-lb.ZMin)                   # beside the base
 oP=[add("Base_print",base_p), add("Lid_print",lid_p)]
 doc.recompute()
 Import.export(oP, OUT+"/usb-adapter-case.step")
+# each part alone, print orientation, same XY footprint as the base
+Import.export([oP[0]], OUT+"/usb-adapter-case-base.step")
+lid_s = moved(lid_f, dy=oy0-lb.YMin, dz=-lb.ZMin)
+Import.export([add("Lid_print_single", lid_s)], OUT+"/usb-adapter-case-lid.step")
 for o,fn in ((oP[0],"usb-adapter-case-base.stl"),(oP[1],"usb-adapter-case-lid.stl")):
     m=MeshPart.meshFromShape(Shape=o.Shape, LinearDeflection=0.03, AngularDeflection=0.25, Relative=False)
     m.write(OUT+"/"+fn)
