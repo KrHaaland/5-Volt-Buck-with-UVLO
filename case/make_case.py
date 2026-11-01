@@ -27,15 +27,16 @@ PILLAR_D, PILLAR_HOLE = 5.5, 2.7                # base pillars, M2.5 clearance
 CB_D, CB_DEPTH = 5.2, 2.1                        # counterbore in the floor; a 2.0 mm pan head sits 0.1 mm below the bottom face
 BOSS_D, BOSS_HOLE, BOSS_DEPTH = 4.6, 2.0, 7.5    # lid bosses, M2.5 self-tap pilot
 SCREW_D, SCREW_L, HEAD_D, HEAD_H = 2.5, 10.0, 5.0, 2.0   # M2.5 x 10 pan-head self-tapping screws (ISO 7045 size head)
-USB_Y, USB_Z, USB_CLR = (2.43,15.57), (1.30,7.05), 0.5
+USB_Y, USB_Z, USB_CLR = (2.43,15.57), (1.30,7.05), 0.5   # shell body section (Y, Z) and the gap around it in the wall slot
+USB_FLANGE_X, USB_FLANGE_GAP = 44.55, 0.3   # the shell's front flange starts here; the end wall stops this far short of it
+USB_TABS, TAB_CLR = (42.35, 42.50, 1.35, 16.65), 0.3   # side latch tabs on the shell (X range, Y reach): groove inside the wall
 WAGO_Y, WAGO_TOP, BOSS_FLAT_CLR = (5.04,12.96), 4.66, 0.45   # the two bosses beside the Wago get a flat up to its top
 CABLE_D, CABLE_Z, CABLE_CSK = 7.0, 1.5, 9.0     # round cable entry: hole, centre height above board top, outside countersink
 BTN_SLOTS = [(7.3,12.5,5.3,8.7),(7.3,12.5,9.3,12.7)]
-VENT_X=[16.0,18.5,21.0,23.5]; VENT_W=1.2; VENT_Y=(3.5,14.5)
 
 # derived
 ix0, iy0, ix1, iy1 = -CLR-EXT, -CLR, BW+CLR, BL+CLR      # cavity incl. wire-end extension
-ox0, oy0, ox1, oy1 = ix0-WALL, iy0-WALL, ix1+WALL, iy1+WALL
+ox0, oy0, ox1, oy1 = ix0-WALL, iy0-WALL, USB_FLANGE_X-USB_FLANGE_GAP, iy1+WALL   # USB end wall is thicker: it reaches the flange
 IR, OR_ = BR+CLR, BR+CLR+WALL
 Z_FLOOR_BOT = -BT-STAND-FLOOR     # -5.2
 Z_FLOOR_TOP = -BT-STAND           # -2.6
@@ -60,6 +61,8 @@ for (hx,hy) in HOLES:
 # USB: U-slot in the end wall, open to the top
 uy0=USB_Y[0]-USB_CLR; uy1=USB_Y[1]+USB_CLR; uz0=USB_Z[0]-USB_CLR
 base = base.cut(box(BW-1.0, ox1+2, uy0, uy1, uz0, Z_WALL_TOP+1))
+# groove for the shell's side latch tabs, inside the wall and hidden under the lid
+base = base.cut(box(USB_TABS[0]-TAB_CLR, USB_TABS[1]+TAB_CLR, USB_TABS[2]-TAB_CLR, USB_TABS[3]+TAB_CLR, uz0, Z_WALL_TOP+1))
 # cable entry: one round hole in the end wall, countersunk on the outside
 base = base.cut(cyl(CABLE_D, WALL+2, V(ox0-1, BL/2, CABLE_Z), V(1,0,0)))
 base = base.cut(Part.makeCone(CABLE_CSK/2, CABLE_D/2, (CABLE_CSK-CABLE_D)/2, V(ox0-0.001, BL/2, CABLE_Z), V(1,0,0)))
@@ -68,13 +71,6 @@ base = base.cut(Part.makeCone(CABLE_CSK/2, CABLE_D/2, (CABLE_CSK-CABLE_D)/2, V(o
 # board end stops either side of the Wago, so the board cannot slide into the extension
 for (y0,y1) in ((iy0, 3.6), (BL-3.6, iy1)):
     base = base.fuse(box(-CLR-1.0, -CLR, y0, y1, Z_FLOOR_TOP, 0.0))
-# floor vents
-for vx in VENT_X:
-    base = base.cut(box(vx-VENT_W/2, vx+VENT_W/2, VENT_Y[0], VENT_Y[1], Z_FLOOR_BOT-1, Z_FLOOR_TOP+1))
-# side-wall vents (long walls), small slots near the top
-for sx in (16.0,18.5,21.0,23.5):
-    base = base.cut(box(sx-VENT_W/2, sx+VENT_W/2, oy0-1, iy0+1, 3.0, 7.0))
-    base = base.cut(box(sx-VENT_W/2, sx+VENT_W/2, iy1-1, oy1+1, 3.0, 7.0))
 try:
     bot=[e for e in base.Edges if abs(e.BoundBox.ZMin-Z_FLOOR_BOT)<1e-6 and abs(e.BoundBox.ZMax-Z_FLOOR_BOT)<1e-6 and e.Length>3]
     base = base.makeChamfer(0.6, bot)
@@ -100,11 +96,9 @@ for (hx,hy) in HOLES:
         lid = lid.cut(box(hx-BOSS_D, hx+BOSS_D, WAGO_Y[0]-BOSS_FLAT_CLR, WAGO_Y[0]+1, -1, WAGO_TOP+USB_CLR))
     if hy > WAGO_Y[1] and hy-BOSS_D/2 < WAGO_Y[1]+BOSS_FLAT_CLR:
         lid = lid.cut(box(hx-BOSS_D, hx+BOSS_D, WAGO_Y[1]-1, WAGO_Y[1]+BOSS_FLAT_CLR, -1, WAGO_TOP+USB_CLR))
-# Wago push-button access slots and vents through the plate
+# Wago push-button access slots through the plate
 for (x0,x1,y0,y1) in BTN_SLOTS:
     lid = lid.cut(box(x0,x1,y0,y1, Z_WALL_TOP-LIP_H-1, Z_LID_TOP+1))
-for vx in VENT_X:
-    lid = lid.cut(box(vx-VENT_W/2, vx+VENT_W/2, VENT_Y[0], VENT_Y[1], Z_WALL_TOP-1, Z_LID_TOP+1))
 try:
     top=[e for e in lid.Edges if abs(e.BoundBox.ZMin-Z_LID_TOP)<1e-6 and abs(e.BoundBox.ZMax-Z_LID_TOP)<1e-6 and e.Length>3 and (abs(e.BoundBox.XMin-ox0)<1e-6 or abs(e.BoundBox.XMax-ox1)<1e-6 or abs(e.BoundBox.YMin-oy0)<1e-6 or abs(e.BoundBox.YMax-oy1)<1e-6)]
     lid = lid.makeChamfer(0.6, top)

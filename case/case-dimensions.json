@@ -1,13 +1,13 @@
 {
  "outer_mm": [
-  54.8,
+  56.6,
   22.8,
   16.2
  ],
  "wall": 2.0,
  "floor": 2.6,
  "lid": 2.0,
- "usb_protrusion_mm": 2.5,
+ "usb_protrusion_mm": 0.6,
  "standoff": 1.0,
  "wire_end_extension": 10.0,
  "cable_hole_mm": 7.0,
