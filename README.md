@@ -108,6 +108,8 @@ specific batch.
 
 ![Exploded view of the printed case: base, PCB with connectors, lid](case/case-exploded.png)
 
+![The assembly with the lid hidden: populated board in the base, screws from below](case/case-assembly-open.png)
+
 A two-part enclosure generated from the PCB geometry, in `case/`:
 
 - `usb-adapter-case.step`: base and lid in print orientation (lid upside down). Also as
