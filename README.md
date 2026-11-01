@@ -20,7 +20,7 @@ The KiCad project files are named `USB-Adapter`.
 | Input | 12 V nominal, Wago 2060-452 push-in terminal (J1). Converter range 3.8 V to 30 V. |
 | Output | 5.16 V measured, USB-A receptacle (J2, TE 292303-1). Converter limit 3 A. |
 | UVLO | Off at 12.1 to 12.3 V, on again at 13.3 to 13.4 V (measured, see tuning log) |
-| Switching frequency | 1.2 MHz (RT pin tied to GND through R3) |
+| Switching frequency | 500 kHz. The RT pin is left floating: the R3 footprint between RT and GND is not populated. Fitting a 0 Ω there would select 1.2 MHz. |
 | Efficiency | About 95 % theoretical for 12 V in, 5 V out, based on the TPS62933 datasheet efficiency curves. Not yet measured on this board. |
 | Inductor | Würth 74439387068, WE-XHMI 7070, 6.8 µH |
 | Soft start | C4 on the SS pin |
@@ -111,5 +111,6 @@ specific batch.
 - `images/`: photo of the assembled board and a 3D render.
 - `production/`: JLCPCB export from the Fabrication Toolkit plugin (gerber zip, BOM,
   component positions, IPC netlist). This export is from an earlier revision: besides the
-  resistor values above, it lists C4 as 33 nF while the schematic has 100 nF.
+  resistor values above, it lists C4 as 33 nF while the schematic has 100 nF, and it lists R3
+  as 0 Ω although that footprint is left unpopulated on the boards.
 - `fabrication-toolkit-options.json`: settings used for the export.
