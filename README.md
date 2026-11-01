@@ -130,19 +130,22 @@ A two-part enclosure generated from the PCB geometry, in `case/`:
 | | |
 |---|---|
 | Outer size | 64.2 × 22.8 × 16.2 mm, 2 mm walls (3.9 mm at the USB end), 2.6 mm floor, 2 mm lid |
-| Board clearance | 0.4 mm to the walls, 1 mm standoff under the board (the through-hole pins are trimmed flush), 9 mm above the board. The two lid bosses beside the Wago are flattened on the connector side up to its height, leaving 0.45 mm. |
+| Board clearance | 0.4 mm to the side walls, 1 mm standoff under the board (the through-hole pins are trimmed flush), 9 mm above the board. The two lid bosses beside the Wago are flattened on the connector side up to its height, leaving 0.45 mm. |
+| Board position | After the first fit check the board was moved 0.5 mm towards the cable end relative to the box (`BOARD_DX` in the script): the three screw positions and the board stops sit 0.5 mm closer to the cable hole than the KiCad hole positions, which closes the gap between the USB flange and the end wall by the same amount. |
 | USB end | U-shaped slot in the end wall; the lid carries a tab that closes the slot above the shell. The wall reaches the connector's front flange, stopping 0.3 mm short of it, so only the flange shows outside the case. The shell's side latch tabs sit in a groove inside the wall. |
-| Wire end | The cavity extends 18 mm beyond the board edge. A single 7.5 mm hole in the end wall takes a two-core cable, its lower edge 1.5 mm above the floor. The extension is free space for a zip tie cinched on the cable: the tie is bigger than the hole, so a yank on the cable stops at the tie instead of at the Wago connection. Two low ribs stop the board sliding into the extension. |
-| Fastening | Three M2.5 × 10 pan-head self-tapping screws driven from below. Each passes through a 2.7 mm hole in the floor and pillar, through a 3 mm board hole, and self-taps into a 2 mm pilot hole in a boss that hangs from the lid down to the board, so the board is clamped between pillar and boss. The heads sit in 5.2 × 2.1 mm counterbores, so the case stands flat. The lid locates with an inner lip before the screws go in. The screws are included in the assembled STEP. |
+| Wire end | The cavity extends 17.5 mm beyond the board edge. A single 7.5 mm hole in the end wall takes a two-core cable, its lower edge 1.5 mm above the floor. The extension is free space for a zip tie cinched on the cable: the tie is bigger than the hole, so a yank on the cable stops at the tie instead of at the Wago connection. Two low ribs stop the board sliding into the extension. |
+| Fastening | Three M2 × 6 pan-head screws driven from below. Each passes through a 2.3 mm hole in the floor and pillar, through a 3 mm board hole, and self-taps into a 1.6 mm pilot hole in a boss that hangs from the lid down to the board, so the board is clamped between pillar and boss. With a 6 mm screw 2.9 mm of thread sits in the boss; a 5 mm screw would leave only 1.9 mm, so use the 6 mm ones. The heads sit in 4.6 × 2.1 mm counterbores, so the case stands flat. The lid locates with an inner lip before the screws go in. The screws are included in the assembled STEP. |
 
 ![Half section through the case: screw through floor, board and lid boss](case/case-section.png)
 
 Assembly: feed the cable through the end wall, cinch a zip tie on it inside the extension,
 strip the two conductors and push them into the Wago. Drop the board into the base so the USB
 shell slides down into the end slot, fit the lid, and drive the three screws from underneath. Every part of the exported board (`USB-Adapter.step`, pins cut flush) was checked against base and
-lid: no overlaps, and nothing closer than 0.45 mm (the lid bosses beside the Wago). The inductor is
-checked as a 7070 envelope because the KiCad model on the board is the smaller 6060 package. The
-case has not been printed yet, so treat the first print as a fit check.
+lid: no overlaps; the closest parts are the USB flange (0.3 mm from the end wall, by design) and
+the lid bosses beside the Wago (0.45 mm). The inductor is checked as a 7070 envelope because the
+KiCad model on the board is the smaller 6060 package. The first fit check showed the USB flange
+sitting 0.5 mm further from the end wall than the model, so the model now places the USB shell
+0.5 mm further out on the board (`USB_DX`) and the board 0.5 mm towards the cable end (`BOARD_DX`).
 
 ## Repository contents
 

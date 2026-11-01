@@ -22,11 +22,17 @@ STAND = 1.0      # floor top to board bottom (through-hole pins are trimmed flus
 ABOVE = 9.0      # board top to lid underside (USB top 7.9, inductor 7.1)
 LID_T = 2.0
 LIP_H, LIP_T, LIP_CLR = 2.5, 1.2, 0.2
-HOLES = [(5.5,15.5),(5.5,2.5),(27.57,9.0)]      # board mounting holes, 3.0 mm
-PILLAR_D, PILLAR_HOLE = 5.5, 2.7                # base pillars, M2.5 clearance
-CB_D, CB_DEPTH = 5.2, 2.1                        # counterbore in the floor; a 2.0 mm pan head sits 0.1 mm below the bottom face
-BOSS_D, BOSS_HOLE, BOSS_DEPTH = 4.6, 2.0, 7.5    # lid bosses, M2.5 self-tap pilot
-SCREW_D, SCREW_L, HEAD_D, HEAD_H = 2.5, 10.0, 5.0, 2.0   # M2.5 x 10 pan-head self-tapping screws (ISO 7045 size head)
+BOARD_HOLES = [(5.5,15.5),(5.5,2.5),(27.57,9.0)]  # the board's three 3.0 mm mounting holes (KiCad, board frame)
+BOARD_DX = -0.5   # fit correction from the first print: the board sits 0.5 mm closer to the cable end than the KiCad
+                  # nominal, which closes the gap between the USB flange and the end wall. The screw positions, the board
+                  # stops and the board model follow it; the box itself does not move.
+USB_DX = 0.5      # measured with it: the real USB shell sits this much further out on the board than the KiCad model,
+                  # so the end wall, the latch-tab groove and the J2 model stay where the flange really is
+HOLES = [(x+BOARD_DX, y) for (x,y) in BOARD_HOLES]
+PILLAR_D, PILLAR_HOLE = 5.5, 2.3                # base pillars, M2 clearance hole
+CB_D, CB_DEPTH = 4.6, 2.1                        # counterbore in the floor; a 2.0 mm pan head sits 0.1 mm below the bottom face
+BOSS_D, BOSS_HOLE, BOSS_DEPTH = 4.6, 1.6, 5.0    # lid bosses, 1.6 mm pilot for an M2 screw to self-tap into PLA/PETG
+SCREW_D, SCREW_L, HEAD_D, HEAD_H = 2.0, 6.0, 4.0, 1.6    # M2 x 6 pan-head screws, self-tapping into the lid bosses (ISO 7045 size head)
 USB_Y, USB_Z, USB_CLR = (2.43,15.57), (1.30,7.05), 0.5   # shell body section (Y, Z) and the gap around it in the wall slot
 USB_FLANGE_X, USB_FLANGE_GAP = 44.55, 0.3   # the shell's front flange starts here; the end wall stops this far short of it
 USB_TABS, TAB_CLR = (42.35, 42.50, 1.35, 16.65), 0.3   # side latch tabs on the shell (X range, Y reach): groove inside the wall
@@ -34,8 +40,9 @@ WAGO_Y, WAGO_TOP, BOSS_FLAT_CLR = (5.04,12.96), 4.66, 0.45   # the two bosses be
 CABLE_D, CABLE_LIFT = 7.5, 1.5                  # round cable entry: hole diameter, gap between the floor and the bottom of the hole
 
 # derived
+USB_X = BOARD_DX+USB_DX           # offset of the real USB shell from its KiCad position, box frame (0 here)
 ix0, iy0, ix1, iy1 = -EXT, -CLR, BW+CLR, BL+CLR          # cavity incl. wire-end extension
-ox0, oy0, ox1, oy1 = ix0-WALL, iy0-WALL, USB_FLANGE_X-USB_FLANGE_GAP, iy1+WALL   # USB end wall is thicker: it reaches the flange
+ox0, oy0, ox1, oy1 = ix0-WALL, iy0-WALL, USB_FLANGE_X+USB_X-USB_FLANGE_GAP, iy1+WALL   # USB end wall is thicker: it reaches the flange
 IR, OR_ = BR+CLR, BR+CLR+WALL
 Z_FLOOR_BOT = -BT-STAND-FLOOR     # -5.2
 Z_FLOOR_TOP = -BT-STAND           # -2.6
@@ -62,14 +69,14 @@ for (hx,hy) in HOLES:
 uy0=USB_Y[0]-USB_CLR; uy1=USB_Y[1]+USB_CLR; uz0=USB_Z[0]-USB_CLR
 base = base.cut(box(BW-1.0, ox1+2, uy0, uy1, uz0, Z_WALL_TOP+1))
 # groove for the shell's side latch tabs, inside the wall and hidden under the lid
-base = base.cut(box(USB_TABS[0]-TAB_CLR, USB_TABS[1]+TAB_CLR, USB_TABS[2]-TAB_CLR, USB_TABS[3]+TAB_CLR, uz0, Z_WALL_TOP+1))
+base = base.cut(box(USB_TABS[0]+USB_X-TAB_CLR, USB_TABS[1]+USB_X+TAB_CLR, USB_TABS[2]-TAB_CLR, USB_TABS[3]+TAB_CLR, uz0, Z_WALL_TOP+1))
 # cable entry: one plain round hole in the end wall
 base = base.cut(cyl(CABLE_D, WALL+2, V(ox0-1, BL/2, CABLE_Z), V(1,0,0)))
 # the extension is free space: a zip tie cinched on the cable here is bigger than the
 # entry hole, so a yank on the cable stops at the tie instead of at the Wago connection
 # board end stops either side of the Wago, so the board cannot slide into the extension
 for (y0,y1) in ((iy0, 3.6), (BL-3.6, iy1)):
-    base = base.fuse(box(-CLR-1.0, -CLR, y0, y1, Z_FLOOR_TOP, 0.0))
+    base = base.fuse(box(BOARD_DX-CLR-1.0, BOARD_DX-CLR, y0, y1, Z_FLOOR_TOP, 0.0))
 try:
     bot=[e for e in base.Edges if abs(e.BoundBox.ZMin-Z_FLOOR_BOT)<1e-6 and abs(e.BoundBox.ZMax-Z_FLOOR_BOT)<1e-6 and e.Length>3]
     base = base.makeChamfer(0.6, bot)
@@ -102,7 +109,7 @@ except Exception as ex: print("lid chamfer skipped:", ex)
 
 base = base.removeSplitter(); lid = lid.removeSplitter()
 
-# ---------------- screws: M2.5 x 10 pan head, driven from below ----------------
+# ---------------- screws: M2 x 6 pan head, driven from below ----------------
 # head in the floor counterbore -> shank through floor, pillar and the 3 mm board hole -> self-taps into the lid boss
 Z_HEAD = Z_FLOOR_BOT+CB_DEPTH          # underside of the head rests on the counterbore bottom
 Z_TIP  = Z_HEAD+SCREW_L
@@ -162,9 +169,9 @@ def refdes(sh):
     hits=[(math.hypot(x-cx,y-cy), r) for (r,x,y) in REFS if bb.XMin-0.3<=x<=bb.XMax+0.3 and bb.YMin-0.3<=y<=bb.YMax+0.3]
     return min(hits)[1] if hits else ""
 
-board = rrect(0,0,BW,BL,BR,-BT,BT)                         # fallback outline if the export is missing
+board = rrect(BOARD_DX,0,BW+BOARD_DX,BL,BR,-BT,BT)         # fallback outline if the export is missing
 for (hx,hy) in HOLES: board = board.cut(cyl(3.0, BT+2, V(hx,hy,-BT-1)))
-comps = {"L1 7070 envelope": box(19.085-4.15,19.085+4.15,6.755-4.15,6.755+4.15,0,7.3)}  # fitted part is a 7070, the KiCad model is a 6060
+comps = {"L1 7070 envelope": box(BOARD_DX+19.085-4.15,BOARD_DX+19.085+4.15,6.755-4.15,6.755+4.15,0,7.3)}  # fitted part is a 7070, the KiCad model is a 6060
 pcb_parts = []
 if os.path.exists(PCB_STEP):
     import Import
@@ -176,10 +183,11 @@ if os.path.exists(PCB_STEP):
         if o is whole: continue
         sh = o.Shape.copy(); sh.translate(V(-PCB_X0, PCB_Y0, -PCB_Z0)); sh = sh.common(flush)
         if sh.Volume < 1e-6: continue
-        if sh.Volume > 900: board = sh; pcb_parts.append(("PCB", sh)); continue
+        if sh.Volume > 900: sh.translate(V(BOARD_DX,0,0)); board = sh; pcb_parts.append(("PCB", sh)); continue
         label = re.sub(r"(Metric)\d{3}$", r"\1", o.Label)          # drop KiCad's duplicate-model suffix
         ref = refdes(sh)
         if ref in DNP: continue
+        sh.translate(V(USB_X if ref=="J2" else BOARD_DX, 0, 0))   # where the part really sits in the box
         label = (ref+" "+label).strip()
         pcb_parts.append((label, sh)); comps[label] = sh
     FreeCAD.closeDocument(pdoc.Name)
@@ -213,14 +221,14 @@ def add(name,shape,group=None):
     if group is not None: group.addObject(o)
     return o
 # case only, assembled: base, lid and screws in their closed positions
-oA=[add("Case_Base",base), add("Case_Lid",lid)]+[add("Screw_M2.5x10_%d"%(i+1), s) for i,s in enumerate(screws)]
+oA=[add("Case_Base",base), add("Case_Lid",lid)]+[add("Screw_M%gx%g_%d"%(SCREW_D,SCREW_L,i+1), s) for i,s in enumerate(screws)]
 doc.recompute()
 Import.export(oA, OUT+"/usb-adapter-case-assembled.step")
 # full assembly: case and populated board as a two-level STEP assembly, parts named by reference designator
 asm=doc.addObject("App::Part","USB_Adapter"); asm.Label="USB-Adapter assembly"
 grp=doc.addObject("App::Part","Case"); grp.Label="Case"; asm.addObject(grp)
 add("Base", base, grp); add("Lid", lid, grp)
-for i,s in enumerate(screws): add("Screw %d M2.5x10 pan head"%(i+1), s, grp)
+for i,s in enumerate(screws): add("Screw %d M%gx%g pan head"%(i+1,SCREW_D,SCREW_L), s, grp)
 pgrp=doc.addObject("App::Part","PCB"); pgrp.Label="PCB"; asm.addObject(pgrp)
 named=[]
 for n,sh in pcb_parts:
@@ -271,6 +279,6 @@ for k,sh in secs.items():
     except Exception as ex: print("section failed", k, ex)
 if os.environ.get("PREVIEW_JSON"): json.dump(prev, open(os.environ["PREVIEW_JSON"],"w"))
 json.dump({"outer_mm":[round(ox1-ox0,1),round(oy1-oy0,1),round(Z_LID_TOP-Z_FLOOR_BOT,1)],"wall":WALL,"floor":FLOOR,"lid":LID_T,
-           "usb_protrusion_mm":round(44.88-ox1,1),"standoff":STAND,"wire_end_extension":EXT,"cable_hole_mm":CABLE_D,"cable_hole_above_floor_mm":CABLE_LIFT,
-           "screws":"3x M2.5 x 10 pan-head self-tapping, from below; counterbore %.1f mm, pilot hole %.1f mm x %.1f mm deep" % (CB_DEPTH, BOSS_HOLE, BOSS_DEPTH)}, open(OUT+"/case-dimensions.json","w"), indent=1)
+           "usb_protrusion_mm":round(44.88-ox1,1),"standoff":STAND,"wire_end_extension":EXT,"cable_hole_mm":CABLE_D,"cable_hole_above_floor_mm":CABLE_LIFT,"board_offset_mm":BOARD_DX,"board_edge_to_cable_wall_mm":round(BOARD_DX-ix0,1),
+           "screws":"3x M%g x %g pan-head, self-tapping into the lid bosses, from below; counterbore %.1f x %.1f mm, pilot hole %.1f mm x %.1f mm deep, thread engagement %.1f mm" % (SCREW_D, SCREW_L, CB_D, CB_DEPTH, BOSS_HOLE, BOSS_DEPTH, Z_TIP)}, open(OUT+"/case-dimensions.json","w"), indent=1)
 print("DONE")
