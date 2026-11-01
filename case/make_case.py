@@ -18,7 +18,7 @@ CLR   = 0.4      # board edge to inner wall
 EXT   = 18.0     # board edge to the inside of the wire-end wall: room for a zip tie on the cable as a pull stop
 WALL  = 2.0
 FLOOR = 2.6
-STAND = 1.0      # floor top to board bottom (through-hole pins are trimmed flush)
+STAND = 0.0      # floor top to board bottom: the board lies directly on the floor (through-hole pins are trimmed flush)
 ABOVE = 9.0      # board top to lid underside (USB top 7.9, inductor 7.1)
 LID_T = 2.0
 LIP_H, LIP_T, LIP_CLR = 2.5, 1.2, 0.2
@@ -44,9 +44,9 @@ USB_X = BOARD_DX+USB_DX           # offset of the real USB shell from its KiCad 
 ix0, iy0, ix1, iy1 = -EXT, -CLR, BW+CLR, BL+CLR          # cavity incl. wire-end extension
 ox0, oy0, ox1, oy1 = ix0-WALL, iy0-WALL, USB_FLANGE_X+USB_X-USB_FLANGE_GAP, iy1+WALL   # USB end wall is thicker: it reaches the flange
 IR, OR_ = BR+CLR, BR+CLR+WALL
-Z_FLOOR_BOT = -BT-STAND-FLOOR     # -5.2
-Z_FLOOR_TOP = -BT-STAND           # -2.6
-CABLE_Z = Z_FLOOR_TOP+CABLE_LIFT+CABLE_D/2   # 2.65: hole centre above board top
+Z_FLOOR_BOT = -BT-STAND-FLOOR     # -4.2
+Z_FLOOR_TOP = -BT-STAND           # -1.6
+CABLE_Z = Z_FLOOR_TOP+CABLE_LIFT+CABLE_D/2   # 3.65: hole centre above board top
 Z_WALL_TOP  = ABOVE               # 9.0
 Z_LID_TOP   = ABOVE+LID_T         # 11.0
 
@@ -60,8 +60,9 @@ def box(x0,x1,y0,y1,z0,z1): return Part.makeBox(x1-x0,y1-y0,z1-z0,V(x0,y0,z0))
 # ---------------- base ----------------
 base = rrect(ox0,oy0,ox1,oy1,OR_, Z_FLOOR_BOT, Z_WALL_TOP-Z_FLOOR_BOT)
 base = base.cut(rrect(ix0,iy0,ix1,iy1,IR, Z_FLOOR_TOP, Z_WALL_TOP-Z_FLOOR_TOP+1))
-for (hx,hy) in HOLES:
-    base = base.fuse(cyl(PILLAR_D, STAND, V(hx,hy,Z_FLOOR_TOP)))
+if STAND > 0:
+    for (hx,hy) in HOLES:
+        base = base.fuse(cyl(PILLAR_D, STAND, V(hx,hy,Z_FLOOR_TOP)))
 for (hx,hy) in HOLES:
     base = base.cut(cyl(PILLAR_HOLE, FLOOR+STAND+1, V(hx,hy,Z_FLOOR_BOT-0.5)))
     base = base.cut(cyl(CB_D, CB_DEPTH+0.5, V(hx,hy,Z_FLOOR_BOT-0.5)))
@@ -84,6 +85,8 @@ lid = rrect(ox0,oy0,ox1,oy1,OR_, Z_WALL_TOP, LID_T)
 lip = rrect(ix0+LIP_CLR, iy0+LIP_CLR, ix1-LIP_CLR, iy1-LIP_CLR, IR-LIP_CLR, Z_WALL_TOP-LIP_H, LIP_H)
 lip = lip.cut(rrect(ix0+LIP_CLR+LIP_T, iy0+LIP_CLR+LIP_T, ix1-LIP_CLR-LIP_T, iy1-LIP_CLR-LIP_T, max(0.5,IR-LIP_CLR-LIP_T), Z_WALL_TOP-LIP_H-1, LIP_H+2))
 lip = lip.cut(box(BW-4, ox1+1, uy0-0.5, uy1+0.5, Z_WALL_TOP-LIP_H-1, Z_WALL_TOP+1))   # clear USB shell
+# notch over the cable hole: a full-size cable reaches above the bottom of the lip at the wire end
+lip = lip.cut(box(ix0-1, ix0+LIP_CLR+LIP_T+1, BL/2-CABLE_D/2-0.5, BL/2+CABLE_D/2+0.5, Z_WALL_TOP-LIP_H-1, Z_WALL_TOP+1))
 lid = lid.fuse(lip)
 # tab filling the wall slot above the USB shell
 tab = box(ix1-0.2, ox1, uy0+0.15, uy1-0.15, USB_Z[1]+USB_CLR, Z_WALL_TOP)
@@ -165,7 +168,8 @@ def refdes(sh):
 
 board = rrect(BOARD_DX,0,BW+BOARD_DX,BL,BR,-BT,BT)         # fallback outline if the export is missing
 for (hx,hy) in HOLES: board = board.cut(cyl(3.0, BT+2, V(hx,hy,-BT-1)))
-comps = {"L1 7070 envelope": box(BOARD_DX+19.085-4.15,BOARD_DX+19.085+4.15,6.755-4.15,6.755+4.15,0,7.3)}  # fitted part is a 7070, the KiCad model is a 6060
+comps = {"L1 7070 envelope": box(BOARD_DX+19.085-4.15,BOARD_DX+19.085+4.15,6.755-4.15,6.755+4.15,0,7.3),
+         "cable envelope":   cyl(CABLE_D-0.1, (BOARD_DX-1.0)-(ox0-1), V(ox0-1, BL/2, CABLE_Z), V(1,0,0))}   # full-size cable, straight in to 1 mm before the board  # fitted part is a 7070, the KiCad model is a 6060
 pcb_parts = []
 if os.path.exists(PCB_STEP):
     import Import
@@ -191,14 +195,18 @@ if os.path.exists(PCB_STEP):
 else:
     print("USB-Adapter.step not found: checking the board outline and inductor envelope only")
 comps["board"] = board
-worst = 99
+above = box(-50, 100, -50, 100, 0.0, 50)   # clearances are measured on the part above the board top: the flush-cut pin
+worst = 99                                  # stubs inside the board end at the board bottom, which lies on the floor
 for name,sh in comps.items():
     for cname,c in (("base",base),("lid",lid)):
         try:
-            v=c.common(sh).Volume; d=0.0 if v>1e-6 else c.distToShape(sh)[0]
+            v=c.common(sh).Volume
+            sa = sh if name in ("board","cable envelope") else sh.common(above)
+            if sa.Volume < 1e-6: sa = sh
+            d=0.0 if v>1e-6 else c.distToShape(sa)[0]
         except Exception as ex:
             v=float('nan'); d=float('nan'); print("  check failed", name, cname, ex)
-        if name!="board": worst=min(worst,d)
+        if name not in ("board","cable envelope"): worst=min(worst,d)
         print(f"CHECK {name:28} vs {cname}: overlap {v:7.3f} mm3   clearance {d:5.2f} mm")
 print("CLOSEST component to the case: %.2f mm" % worst)
 # screws: must clear base and board; the overlap with the lid is the material the thread cuts into

@@ -2,17 +2,17 @@
  "outer_mm": [
   64.2,
   22.8,
-  16.2
+  15.2
  ],
  "wall": 2.0,
  "floor": 2.6,
  "lid": 2.0,
  "usb_protrusion_mm": 0.6,
- "standoff": 1.0,
+ "standoff": 0.0,
  "wire_end_extension": 18.0,
  "cable_hole_mm": 7.5,
  "cable_hole_above_floor_mm": 1.5,
  "board_offset_mm": -0.5,
  "board_edge_to_cable_wall_mm": 17.5,
- "screws": "3x M2 x 6 pan-head, self-tapping into the lid bosses, from below; counterbore 4.6 x 2.1 mm, pilot hole 1.6 mm x 5.0 mm deep, thread engagement 2.9 mm"
+ "screws": "3x M2 x 6 pan-head, self-tapping into the lid bosses, from below; counterbore 4.6 x 2.1 mm, pilot hole 1.6 mm x 5.0 mm deep, thread engagement 3.9 mm"
 }
