@@ -30,9 +30,9 @@ USB_DX = 0.5      # measured with it: the real USB shell sits this much further 
                   # so the end wall, the latch-tab groove and the J2 model stay where the flange really is
 HOLES = [(x+BOARD_DX, y) for (x,y) in BOARD_HOLES]
 PILLAR_D, PILLAR_HOLE = 5.5, 2.2                # clearance hole in the floor for the 1.9 mm thread (FDM holes print a little small)
-CB_D, CB_DEPTH = 4.2, 2.1                        # counterbore in the floor for the 3.7 mm head; a 2.0 mm head sits 0.1 mm below the bottom face
+CB_D, CB_DEPTH = 4.2, 1.4                        # counterbore in the floor for the 3.7 x 1.4 mm head: flush with the bottom face, 1.2 mm floor left above it
 BOSS_D, BOSS_HOLE, BOSS_DEPTH = 4.6, 1.6, 5.0    # lid bosses, 1.6 mm pilot for an M2 screw to self-tap into PLA/PETG
-SCREW_D, SCREW_L, HEAD_D, HEAD_H = 2.0, 6.0, 4.0, 1.6    # M2 x 6 pan-head screws, self-tapping into the lid bosses (ISO 7045 size head)
+SCREW_D, SCREW_L, HEAD_D, HEAD_H = 2.0, 6.0, 4.0, 1.4    # M2 x 6 pan-head screws, self-tapping into the lid bosses (head height as measured)
 USB_Y, USB_Z, USB_CLR = (2.43,15.57), (1.30,7.05), 0.5   # shell body section (Y, Z) and the gap around it in the wall slot
 USB_FLANGE_X, USB_FLANGE_GAP = 44.55, 0.3   # the shell's front flange starts here; the end wall stops this far short of it
 USB_TABS, TAB_CLR = (42.35, 42.50, 1.35, 16.65), 0.3   # side latch tabs on the shell (X range, Y reach): groove inside the wall
