@@ -14,5 +14,5 @@
  "cable_hole_above_floor_mm": 1.5,
  "board_offset_mm": -0.5,
  "board_edge_to_cable_wall_mm": 17.5,
- "screws": "3x M2 x 6 pan-head, self-tapping into the lid bosses, from below; counterbore 4.2 x 1.4 mm, pilot hole 1.6 mm x 5.0 mm deep, thread engagement 3.2 mm"
+ "screws": "3x M2 x 6 pan-head, self-tapping into the lid bosses, from below; counterbore 4.2 x 1.5 mm, pilot hole 1.6 mm x 5.0 mm deep, thread engagement 3.3 mm"
 }
