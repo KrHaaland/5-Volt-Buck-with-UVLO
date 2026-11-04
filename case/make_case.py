@@ -38,6 +38,8 @@ USB_FLANGE_X, USB_FLANGE_GAP = 44.55, 0.3   # the shell's front flange starts he
 USB_TABS, TAB_CLR = (42.35, 42.50, 1.35, 16.65), 0.3   # side latch tabs on the shell (X range, Y reach): groove inside the wall
 WAGO_Y, WAGO_TOP, BOSS_FLAT_CLR = (5.04,12.96), 4.66, 0.45   # the two bosses beside the Wago get a flat up to its top
 CABLE_D, CABLE_LIFT = 7.5, 1.5                  # round cable entry: hole diameter, gap between the floor and the bottom of the hole
+FILL_LEVEL, POCKET_CLR = 3.0, 0.5               # filled lid: solid down to this height above the board top (clears every 0805/1206 and the IC,
+                                                # the tallest is 1.6 mm), with pockets this much bigger than the Wago, the inductor and the USB shell
 
 # derived
 USB_X = BOARD_DX+USB_DX           # offset of the real USB shell from its KiCad position, box frame (0 here)
@@ -79,51 +81,6 @@ base = base.cut(cyl(CABLE_D, WALL+2, V(ox0-1, BL/2, CABLE_Z), V(1,0,0)))
 for (y0,y1) in ((iy0, 3.6), (BL-3.6, iy1)):
     base = base.fuse(box(BOARD_DX-CLR-1.0, BOARD_DX-CLR, y0, y1, Z_FLOOR_TOP, 0.0))
 # no chamfer on the bed side: the floor's underside is left sharp-edged
-
-# ---------------- lid ----------------
-lid = rrect(ox0,oy0,ox1,oy1,OR_, Z_WALL_TOP, LID_T)
-lip = rrect(ix0+LIP_CLR, iy0+LIP_CLR, ix1-LIP_CLR, iy1-LIP_CLR, IR-LIP_CLR, Z_WALL_TOP-LIP_H, LIP_H)
-lip = lip.cut(rrect(ix0+LIP_CLR+LIP_T, iy0+LIP_CLR+LIP_T, ix1-LIP_CLR-LIP_T, iy1-LIP_CLR-LIP_T, max(0.5,IR-LIP_CLR-LIP_T), Z_WALL_TOP-LIP_H-1, LIP_H+2))
-lip = lip.cut(box(BW-4, ox1+1, uy0-0.5, uy1+0.5, Z_WALL_TOP-LIP_H-1, Z_WALL_TOP+1))   # clear USB shell
-# notch over the cable hole: a full-size cable reaches above the bottom of the lip at the wire end
-lip = lip.cut(box(ix0-1, ix0+LIP_CLR+LIP_T+1, BL/2-CABLE_D/2-0.5, BL/2+CABLE_D/2+0.5, Z_WALL_TOP-LIP_H-1, Z_WALL_TOP+1))
-lid = lid.fuse(lip)
-# tab filling the wall slot above the USB shell
-tab = box(ix1-0.2, ox1, uy0+0.15, uy1-0.15, USB_Z[1]+USB_CLR, Z_WALL_TOP)
-lid = lid.fuse(tab)
-# bosses down to board top
-for (hx,hy) in HOLES:
-    lid = lid.fuse(cyl(BOSS_D, ABOVE, V(hx,hy,0)))
-for (hx,hy) in HOLES:
-    lid = lid.cut(cyl(BOSS_HOLE, BOSS_DEPTH, V(hx,hy,-0.001)))
-    # the board holes beside the Wago leave only 1 mm between hole edge and connector body: flatten the
-    # boss on that side, but only as high as the connector, so the threaded part above keeps a full wall
-    if hy < WAGO_Y[0] and hy+BOSS_D/2 > WAGO_Y[0]-BOSS_FLAT_CLR:
-        lid = lid.cut(box(hx-BOSS_D, hx+BOSS_D, WAGO_Y[0]-BOSS_FLAT_CLR, WAGO_Y[0]+1, -1, WAGO_TOP+USB_CLR))
-    if hy > WAGO_Y[1] and hy-BOSS_D/2 < WAGO_Y[1]+BOSS_FLAT_CLR:
-        lid = lid.cut(box(hx-BOSS_D, hx+BOSS_D, WAGO_Y[1]-1, WAGO_Y[1]+BOSS_FLAT_CLR, -1, WAGO_TOP+USB_CLR))
-# no chamfer on the lid top either: it is the bed side when the lid is printed upside down
-
-base = base.removeSplitter(); lid = lid.removeSplitter()
-
-# ---------------- screws: M2 x 6 pan head, driven from below ----------------
-# head in the floor counterbore -> shank through floor, pillar and the 3 mm board hole -> self-taps into the lid boss
-Z_HEAD = Z_FLOOR_BOT+CB_DEPTH          # underside of the head rests on the counterbore bottom
-Z_TIP  = Z_HEAD+SCREW_L
-def screw(hx,hy):
-    s = cyl(HEAD_D, HEAD_H, V(hx,hy,Z_HEAD-HEAD_H))
-    for (dx,dy) in ((0.35,1.5),(1.5,0.35)):                                   # cross recess
-        s = s.cut(box(hx-dx,hx+dx,hy-dy,hy+dy, Z_HEAD-HEAD_H-0.1, Z_HEAD-HEAD_H+0.9))
-    s = s.fuse(cyl(SCREW_D, SCREW_L-0.5, V(hx,hy,Z_HEAD)))
-    s = s.fuse(Part.makeCone(SCREW_D/2, SCREW_D/2-0.5, 0.5, V(hx,hy,Z_TIP-0.5)))
-    return s.removeSplitter()
-screws = [screw(hx,hy) for (hx,hy) in HOLES]
-print("SCREW head Z %.1f..%.1f (case bottom %.1f), tip Z %.1f, pilot bottom Z %.1f, thread engagement %.1f mm" %
-      (Z_HEAD-HEAD_H, Z_HEAD, Z_FLOOR_BOT, Z_TIP, BOSS_DEPTH, Z_TIP))
-print("VALID base", base.isValid(), "lid", lid.isValid(), "solids", len(base.Solids), len(lid.Solids))
-print("VOL base %.0f mm3  lid %.0f mm3" % (base.Volume, lid.Volume))
-bb=base.BoundBox; print("BASE bbox X %.1f..%.1f Y %.1f..%.1f Z %.1f..%.1f" % (bb.XMin,bb.XMax,bb.YMin,bb.YMax,bb.ZMin,bb.ZMax))
-bb=lid.BoundBox;  print("LID  bbox X %.1f..%.1f Y %.1f..%.1f Z %.1f..%.1f" % (bb.XMin,bb.XMax,bb.YMin,bb.YMax,bb.ZMin,bb.ZMax))
 
 # ---------------- populated board from the KiCad STEP export ----------------
 # KiCad writes the export in layout coordinates: X as drawn, Y negated, Z=0 at the board bottom with the
@@ -195,6 +152,70 @@ if os.path.exists(PCB_STEP):
 else:
     print("USB-Adapter.step not found: checking the board outline and inductor envelope only")
 comps["board"] = board
+
+# ---------------- lid ----------------
+lid = rrect(ox0,oy0,ox1,oy1,OR_, Z_WALL_TOP, LID_T)
+lip = rrect(ix0+LIP_CLR, iy0+LIP_CLR, ix1-LIP_CLR, iy1-LIP_CLR, IR-LIP_CLR, Z_WALL_TOP-LIP_H, LIP_H)
+lip = lip.cut(rrect(ix0+LIP_CLR+LIP_T, iy0+LIP_CLR+LIP_T, ix1-LIP_CLR-LIP_T, iy1-LIP_CLR-LIP_T, max(0.5,IR-LIP_CLR-LIP_T), Z_WALL_TOP-LIP_H-1, LIP_H+2))
+lip = lip.cut(box(BW-4, ox1+1, uy0-0.5, uy1+0.5, Z_WALL_TOP-LIP_H-1, Z_WALL_TOP+1))   # clear USB shell
+# notch over the cable hole: a full-size cable reaches above the bottom of the lip at the wire end
+lip = lip.cut(box(ix0-1, ix0+LIP_CLR+LIP_T+1, BL/2-CABLE_D/2-0.5, BL/2+CABLE_D/2+0.5, Z_WALL_TOP-LIP_H-1, Z_WALL_TOP+1))
+lid = lid.fuse(lip)
+# tab filling the wall slot above the USB shell
+tab = box(ix1-0.2, ox1, uy0+0.15, uy1-0.15, USB_Z[1]+USB_CLR, Z_WALL_TOP)
+lid = lid.fuse(tab)
+# solid fill over the board: the lid comes down to FILL_LEVEL above the board top with the lip's outline, from the
+# board's cable end to the USB wall, and gets a pocket with POCKET_CLR clearance around every part taller than that
+fill = rrect(BOARD_DX-CLR, iy0+LIP_CLR, ix1-LIP_CLR, iy1-LIP_CLR, IR-LIP_CLR, FILL_LEVEL, Z_WALL_TOP-FILL_LEVEL)
+pockets = []
+for name, sh in comps.items():
+    if name in ("board", "cable envelope"): continue
+    bb = sh.common(box(-50,100,-50,100,0,50)).BoundBox      # the part above the board top
+    if not bb.isValid() or bb.ZMax+POCKET_CLR <= FILL_LEVEL: continue
+    if name.startswith("J2"):     # USB shell: the pocket matches the wall slot, the tab above the shell stays
+        pk = box(bb.XMin-POCKET_CLR, ox1+2, uy0, uy1, -1, USB_Z[1]+USB_CLR)
+    else:
+        x0 = bb.XMin-POCKET_CLR
+        if name.startswith("J1"): x0 = BOARD_DX-CLR-2        # Wago: open towards the cable chamber, the wires come from there
+        pk = box(x0, bb.XMax+POCKET_CLR, bb.YMin-POCKET_CLR, bb.YMax+POCKET_CLR, -1, bb.ZMax+POCKET_CLR)
+    fill = fill.cut(pk); pockets.append((name, pk.BoundBox))
+lid = lid.fuse(fill)
+for name, pb in pockets:
+    print("POCKET %-28s X %6.2f..%6.2f  Y %6.2f..%6.2f  up to Z %.2f" % (name, pb.XMin, pb.XMax, pb.YMin, pb.YMax, pb.ZMax))
+# bosses down to board top
+for (hx,hy) in HOLES:
+    lid = lid.fuse(cyl(BOSS_D, ABOVE, V(hx,hy,0)))
+for (hx,hy) in HOLES:
+    lid = lid.cut(cyl(BOSS_HOLE, BOSS_DEPTH, V(hx,hy,-0.001)))
+    # the board holes beside the Wago leave only 1 mm between hole edge and connector body: flatten the
+    # boss on that side, but only as high as the connector, so the threaded part above keeps a full wall
+    if hy < WAGO_Y[0] and hy+BOSS_D/2 > WAGO_Y[0]-BOSS_FLAT_CLR:
+        lid = lid.cut(box(hx-BOSS_D, hx+BOSS_D, WAGO_Y[0]-BOSS_FLAT_CLR, WAGO_Y[0]+1, -1, WAGO_TOP+USB_CLR))
+    if hy > WAGO_Y[1] and hy-BOSS_D/2 < WAGO_Y[1]+BOSS_FLAT_CLR:
+        lid = lid.cut(box(hx-BOSS_D, hx+BOSS_D, WAGO_Y[1]-1, WAGO_Y[1]+BOSS_FLAT_CLR, -1, WAGO_TOP+USB_CLR))
+# no chamfer on the lid top either: it is the bed side when the lid is printed upside down
+
+base = base.removeSplitter(); lid = lid.removeSplitter()
+
+# ---------------- screws: M2 x 6 pan head, driven from below ----------------
+# head in the floor counterbore -> shank through floor, pillar and the 3 mm board hole -> self-taps into the lid boss
+Z_HEAD = Z_FLOOR_BOT+CB_DEPTH          # underside of the head rests on the counterbore bottom
+Z_TIP  = Z_HEAD+SCREW_L
+def screw(hx,hy):
+    s = cyl(HEAD_D, HEAD_H, V(hx,hy,Z_HEAD-HEAD_H))
+    for (dx,dy) in ((0.35,1.5),(1.5,0.35)):                                   # cross recess
+        s = s.cut(box(hx-dx,hx+dx,hy-dy,hy+dy, Z_HEAD-HEAD_H-0.1, Z_HEAD-HEAD_H+0.9))
+    s = s.fuse(cyl(SCREW_D, SCREW_L-0.5, V(hx,hy,Z_HEAD)))
+    s = s.fuse(Part.makeCone(SCREW_D/2, SCREW_D/2-0.5, 0.5, V(hx,hy,Z_TIP-0.5)))
+    return s.removeSplitter()
+screws = [screw(hx,hy) for (hx,hy) in HOLES]
+print("SCREW head Z %.1f..%.1f (case bottom %.1f), tip Z %.1f, pilot bottom Z %.1f, thread engagement %.1f mm" %
+      (Z_HEAD-HEAD_H, Z_HEAD, Z_FLOOR_BOT, Z_TIP, BOSS_DEPTH, Z_TIP))
+print("VALID base", base.isValid(), "lid", lid.isValid(), "solids", len(base.Solids), len(lid.Solids))
+print("VOL base %.0f mm3  lid %.0f mm3" % (base.Volume, lid.Volume))
+bb=base.BoundBox; print("BASE bbox X %.1f..%.1f Y %.1f..%.1f Z %.1f..%.1f" % (bb.XMin,bb.XMax,bb.YMin,bb.YMax,bb.ZMin,bb.ZMax))
+bb=lid.BoundBox;  print("LID  bbox X %.1f..%.1f Y %.1f..%.1f Z %.1f..%.1f" % (bb.XMin,bb.XMax,bb.YMin,bb.YMax,bb.ZMin,bb.ZMax))
+
 above = box(-50, 100, -50, 100, 0.0, 50)   # clearances are measured on the part above the board top: the flush-cut pin
 worst = 99                                  # stubs inside the board end at the board bottom, which lies on the floor
 for name,sh in comps.items():
