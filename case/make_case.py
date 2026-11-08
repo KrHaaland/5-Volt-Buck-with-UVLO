@@ -38,8 +38,8 @@ USB_FLANGE_X, USB_FLANGE_GAP = 44.55, 0.3   # the shell's front flange starts he
 USB_TABS, TAB_CLR = (42.35, 42.50, 1.35, 16.65), 0.3   # side latch tabs on the shell (X range, Y reach): groove inside the wall
 WAGO_Y, WAGO_TOP, BOSS_FLAT_CLR = (5.04,12.96), 4.66, 0.45   # the two bosses beside the Wago get a flat up to its top
 CABLE_D, CABLE_LIFT = 7.5, 1.5                  # round cable entry: hole diameter, gap between the floor and the bottom of the hole
-FILL_LEVEL, POCKET_CLR = 3.0, 0.5               # filled lid: solid down to this height above the board top (clears every 0805/1206 and the IC,
-                                                # the tallest is 1.6 mm), with pockets this much bigger than the Wago, the inductor and the USB shell
+FILL_LEVEL, POCKET_CLR = 2.2, 0.5               # filled lid: solid down to this height above the board top (0.6 mm over the 1.6 mm 1206 capacitors,
+                                                # the tallest small parts), with pockets this much bigger than the Wago, the inductor and the USB shell
 
 # derived
 USB_X = BOARD_DX+USB_DX           # offset of the real USB shell from its KiCad position, box frame (0 here)
