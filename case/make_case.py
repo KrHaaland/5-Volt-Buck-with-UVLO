@@ -33,7 +33,9 @@ PILLAR_D, PILLAR_HOLE = 5.5, 2.2                # clearance hole in the floor fo
 CB_D, CB_DEPTH = 4.2, 1.5                        # counterbore in the floor for the 3.7 x 1.4 mm head: 0.1 mm deeper than the head so it sits flush despite the printed overhang, 1.1 mm floor left above it
 BOSS_D, BOSS_HOLE, BOSS_DEPTH = 4.6, 1.6, 5.0    # lid bosses, 1.6 mm pilot for an M2 screw to self-tap into PLA/PETG
 SCREW_D, SCREW_L, HEAD_D, HEAD_H = 2.0, 6.0, 4.0, 1.4    # M2 x 6 pan-head screws, self-tapping into the lid bosses (head height as measured)
-USB_Y, USB_Z, USB_CLR = (2.43,15.57), (1.30,7.05), 0.5   # shell body section (Y, Z) and the gap around it in the wall slot
+USB_Y, USB_Z, USB_CLR = (2.43,15.57), (1.30,7.05), 0.5   # shell body section (Y, Z); gap the lid's tab keeps to the shell, and the width of the tab's slot
+USB_SLOT_CLR = 0.0   # gap between the shell and the sides and bottom of the slot in the base: the second print measured almost
+                     # 1 mm per side with 0.5 here, so the walls were brought 0.5 mm closer (the slot prints oversize)
 USB_FLANGE_X, USB_FLANGE_GAP = 44.55, 0.3   # the shell's front flange starts here; the end wall stops this far short of it
 USB_TABS, TAB_CLR = (42.35, 42.50, 1.35, 16.65), 0.3   # side latch tabs on the shell (X range, Y reach): groove inside the wall
 WAGO_Y, WAGO_TOP, BOSS_FLAT_CLR = (5.04,12.96), 4.66, 0.45   # the two bosses beside the Wago get a flat up to its top
@@ -68,9 +70,12 @@ if STAND > 0:
 for (hx,hy) in HOLES:
     base = base.cut(cyl(PILLAR_HOLE, FLOOR+STAND+1, V(hx,hy,Z_FLOOR_BOT-0.5)))
     base = base.cut(cyl(CB_D, CB_DEPTH+0.5, V(hx,hy,Z_FLOOR_BOT-0.5)))
-# USB: U-slot in the end wall, open to the top
-uy0=USB_Y[0]-USB_CLR; uy1=USB_Y[1]+USB_CLR; uz0=USB_Z[0]-USB_CLR
-base = base.cut(box(BW-1.0, ox1+2, uy0, uy1, uz0, Z_WALL_TOP+1))
+# USB: U-slot in the end wall, open to the top. Shell-sized around the shell; USB_CLR wider from just below the
+# lid tab's underside upwards, so the tab (unchanged lid) still fits, resting 0.2 mm clear of the ledges either side
+uy0=USB_Y[0]-USB_CLR; uy1=USB_Y[1]+USB_CLR; uz0=USB_Z[0]-USB_CLR      # tab slot (lid side), also the latch-tab groove bottom
+sy0=USB_Y[0]-USB_SLOT_CLR; sy1=USB_Y[1]+USB_SLOT_CLR; sz0=USB_Z[0]-USB_SLOT_CLR   # shell slot (base)
+base = base.cut(box(BW-1.0, ox1+2, sy0, sy1, sz0, Z_WALL_TOP+1))
+base = base.cut(box(BW-1.0, ox1+2, uy0, uy1, USB_Z[1]+USB_CLR-0.2, Z_WALL_TOP+1))
 # groove for the shell's side latch tabs, inside the wall and hidden under the lid
 base = base.cut(box(USB_TABS[0]+USB_X-TAB_CLR, USB_TABS[1]+USB_X+TAB_CLR, USB_TABS[2]-TAB_CLR, USB_TABS[3]+TAB_CLR, uz0, Z_WALL_TOP+1))
 # cable entry: one plain round hole in the end wall
