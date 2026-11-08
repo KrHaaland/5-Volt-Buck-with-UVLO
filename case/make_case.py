@@ -33,6 +33,7 @@ PILLAR_D, PILLAR_HOLE = 5.5, 2.2                # clearance hole in the floor fo
 CB_D, CB_DEPTH = 4.2, 1.5                        # counterbore in the floor for the 3.7 x 1.4 mm head: 0.1 mm deeper than the head so it sits flush despite the printed overhang, 1.1 mm floor left above it
 BOSS_D, BOSS_HOLE, BOSS_DEPTH = 4.6, 1.6, 5.0    # lid bosses, 1.6 mm pilot for an M2 screw to self-tap into PLA/PETG
 SCREW_D, SCREW_L, HEAD_D, HEAD_H = 2.0, 6.0, 4.0, 1.4    # M2 x 6 pan-head screws, self-tapping into the lid bosses (head height as measured)
+HEX_AF, HEX_DEPTH = 1.3, 0.9                             # hex socket in the head (the screws used take a 1.3 mm key)
 USB_Y, USB_Z, USB_CLR = (2.43,15.57), (1.30,7.05), 0.5   # shell body section (Y, Z); gap the lid's tab keeps to the shell, and the width of the tab's slot
 USB_SLOT_CLR = 0.0   # gap between the shell and the sides and bottom of the slot in the base: the second print measured almost
                      # 1 mm per side with 0.5 here, so the walls were brought 0.5 mm closer (the slot prints oversize)
@@ -202,14 +203,15 @@ for (hx,hy) in HOLES:
 
 base = base.removeSplitter(); lid = lid.removeSplitter()
 
-# ---------------- screws: M2 x 6 pan head, driven from below ----------------
+# ---------------- screws: M2 x 6 pan head with hex socket, driven from below ----------------
 # head in the floor counterbore -> shank through floor, pillar and the 3 mm board hole -> self-taps into the lid boss
 Z_HEAD = Z_FLOOR_BOT+CB_DEPTH          # underside of the head rests on the counterbore bottom
 Z_TIP  = Z_HEAD+SCREW_L
 def screw(hx,hy):
     s = cyl(HEAD_D, HEAD_H, V(hx,hy,Z_HEAD-HEAD_H))
-    for (dx,dy) in ((0.35,1.5),(1.5,0.35)):                                   # cross recess
-        s = s.cut(box(hx-dx,hx+dx,hy-dy,hy+dy, Z_HEAD-HEAD_H-0.1, Z_HEAD-HEAD_H+0.9))
+    r = HEX_AF/2/math.cos(math.pi/6)                                           # hex socket
+    hexa = Part.Face(Part.makePolygon([V(hx+r*math.cos(a), hy+r*math.sin(a), Z_HEAD-HEAD_H-0.1) for a in [i*math.pi/3 for i in range(6)]]+[V(hx+r, hy, Z_HEAD-HEAD_H-0.1)]))
+    s = s.cut(hexa.extrude(V(0,0,HEX_DEPTH+0.1)))
     s = s.fuse(cyl(SCREW_D, SCREW_L-0.5, V(hx,hy,Z_HEAD)))
     s = s.fuse(Part.makeCone(SCREW_D/2, SCREW_D/2-0.5, 0.5, V(hx,hy,Z_TIP-0.5)))
     return s.removeSplitter()
@@ -256,7 +258,7 @@ Import.export(oA, OUT+"/usb-adapter-case-assembled.step")
 asm=doc.addObject("App::Part","USB_Adapter"); asm.Label="USB-Adapter assembly"
 grp=doc.addObject("App::Part","Case"); grp.Label="Case"; asm.addObject(grp)
 add("Base", base, grp); add("Lid", lid, grp)
-for i,s in enumerate(screws): add("Screw %d M%gx%g pan head"%(i+1,SCREW_D,SCREW_L), s, grp)
+for i,s in enumerate(screws): add("Screw %d M%gx%g hex socket pan head"%(i+1,SCREW_D,SCREW_L), s, grp)
 pgrp=doc.addObject("App::Part","PCB"); pgrp.Label="PCB"; asm.addObject(pgrp)
 named=[]
 for n,sh in pcb_parts:
